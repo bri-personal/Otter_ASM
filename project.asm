@@ -85,9 +85,9 @@ WORLD_PAGE:
 	addi	t1, x0, 0x23
 	beq	t0, t1, P_MOVE_RIGHT	# check if 'D' was pressed
 	addi	t1, x0, 0x1D
-	beq	t0, t1, P_MOVE_UP	# check if 'D' was pressed
+	beq	t0, t1, P_MOVE_UP	# check if 'W' was pressed
 	addi	t1, x0, 0x1B
-	beq	t0, t1, P_MOVE_DOWN	# check if 'D' was pressed
+	beq	t0, t1, P_MOVE_DOWN	# check if 'S' was pressed
 	j	WORLD_PAGE
 P_MOVE_LEFT:
 	la	t0, PLAYER
