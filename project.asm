@@ -1,9 +1,13 @@
 # define addresses and INTR enable
 .eqv	MMIO	0x11000000		# first MMIO address
-.eqv	STACK	0x10000			#stack address
+.eqv	STACK	0x10000			# stack address
 .eqv	INT_EN	8			# enable interrupts
 
-#define colors
+# define screen dimensions
+.eqv	WIDTH	80
+.eqv	HEIGHT	60
+
+# define colors
 .eqv	BLACK	0
 .eqv	WHITE	0xFF
 .eqv	RED	0xE0
@@ -83,24 +87,26 @@ DRAW_VERT_1:
 	ret
 
 # Fills the 60x80 grid with color given by a3 using successive calls to draw_horizontal_line
-# Modifies (directly or indirectly): t0, t1, t4, a0, a1, a2
+# Modifies (directly or indirectly): t0, t1, t2, a0, a1, a2, a4
 DRAW_BG:
 	addi	sp, sp, -4
 	sw	ra, 0(sp)
-	li	a1, 0			# a1= row_counter
-	li	t4, 60			# max rows
-BG_START:	
-	li	a0, 0
-	li	a2, 79			# total number of columns
-	call	DRAW_HORIZ_LINE		# must not modify: t4, a1, a3
-	addi	a1, a1, 1
-	bne	t4, a1, BG_START	# branch to draw more rows
+	
+	# draw rectangle that fills screen
+	addi	a0, x0, 0
+	addi	a1, x0, 0
+	addi	a2, a0, WIDTH
+	addi	a2, a2, -1
+	addi	a4, a1, HEIGHT
+	addi	a4, a4, -1
+	call	DRAW_RECT
+	
 	lw	ra, 0(sp)
 	addi	sp, sp, 4
 	ret
 	
 # Draws rectangle (a0, a1) to (a2, a4) color given by a3 using successive calls to draw_horizontal_line
-# Modifies (directly or indirectly): t0, t1, a0, a1, a4
+# Modifies (directly or indirectly): t0, t1, t2, a1, a2, a4 (a0 is modified but ends up same as start)
 DRAW_RECT:
 	addi	sp, sp, -4
 	sw	ra, 0(sp)
@@ -121,6 +127,8 @@ RECT_START:
 # 	(col, row) = (a0,a1)
 # Modifies (directly or indirectly): t0, t1
 DRAW_DOT:
+	addi	sp, sp, -4
+	sw	ra, 0(sp)
 	andi	t0, a0, 0x7F		# select bottom 7 bits (col)
 	andi	t1, a1, 0x3F		# select bottom 6 bits  (row)
 	slli	t1, t1, 7		# {a1[5:0],a0[6:0]} 
@@ -128,4 +136,6 @@ DRAW_DOT:
 	li	t1, MMIO		# ADDED - load MMIO address
 	sw	t0, 0x120(t1)		# write 13 address bits to register
 	sw	a3, 0x140(t1)		# write color data to frame buffer
+	lw	ra, 0(sp)
+	addi	sp, sp, 4
 	ret
