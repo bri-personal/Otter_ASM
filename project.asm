@@ -20,7 +20,11 @@
 
 # predefined arrays in data segment
 .data
-PLAYER:	.space	2	# player x and y coords, top of rectangle
+# player data:
+# 0: x coord of top of rectangle
+# 1: y coord of top of rectange
+# 2: orientation (0=down, 1=up, 2=left, 3=right)
+PLAYER:	.space	3
 
 # executed code
 .text
@@ -34,6 +38,7 @@ MAIN:
         la	t0, PLAYER		# load address of player pos
         sb	x0, 0(t0)		# x pos
         sb	x0, 1(t0)		# y pos
+        sb	x0, 2(t0)		# orientation, down to start
         
         # setup ISR address
         la	t0, ISR
@@ -85,16 +90,26 @@ WORLD_PAGE:
 	beq	t0, t1, P_MOVE_DOWN	# check if 'D' was pressed
 	j	WORLD_PAGE
 P_MOVE_LEFT:
-	# get player x and dec by 1, if allowed
 	la	t0, PLAYER
+	
+	# set orientation to left
+	addi	t1, x0, 2		
+	sb	t1, 2(t0)
+	
+	# get player x and dec by 1, if allowed
 	lb	t1, 0(t0)		# load player x
-	beqz	t1, WORLD_PAGE		# if player x already 0, can't move left
+	beqz	t1, WORLD_START		# if player x already 0, can't move left
 	addi	t1, t1, -1		# decrement x by 1
-	sb	t1, 0(t0)		# store decremented x
+	sb	t1, 0(t0)		# store decremented x	
 	j	WORLD_START
 P_MOVE_RIGHT:
-	# get player x and inc by 1, if allowed
 	la	t0, PLAYER
+	
+	# set orientation to right
+	addi	t1, x0, 3		
+	sb	t1, 2(t0)
+	
+	# get player x and inc by 1, if allowed
 	lb	t1, 0(t0)		# load player x
 	
 	# get max possible x
@@ -102,21 +117,31 @@ P_MOVE_RIGHT:
 	addi	t3, x0, P_WIDTH	
 	sub	t2, t2, t3
 	
-	beq	t1, t2, WORLD_PAGE	# if player x already WIDTH-P_WIDTH, can't move right
+	beq	t1, t2, WORLD_START	# if player x already WIDTH-P_WIDTH, can't move right
 	addi	t1, t1, 1		# increment x by 1
 	sb	t1, 0(t0)		# store incremented x
 	j	WORLD_START
 P_MOVE_UP:
-	# get player y and dec by 1, if allowed
 	la	t0, PLAYER
+	
+	# set orientation to up
+	addi	t1, x0, 1		
+	sb	t1, 2(t0)
+	
+	# get player y and dec by 1, if allowed
 	lb	t1, 1(t0)		# load player y
-	beqz	t1, WORLD_PAGE		# if player y already 0, can't move up
+	beqz	t1, WORLD_START		# if player y already 0, can't move up
 	addi	t1, t1, -1		# decrement y by 1
 	sb	t1, 1(t0)		# store decremented y
 	j	WORLD_START
 P_MOVE_DOWN:
-	# get player y and inc by 1, if allowed
 	la	t0, PLAYER
+	
+	# set orientation to down
+	addi	t1, x0, 0		
+	sb	t1, 2(t0)
+	
+	# get player y and inc by 1, if allowed
 	lb	t1, 1(t0)		# load player y
 	
 	# get max possible x
@@ -124,7 +149,7 @@ P_MOVE_DOWN:
 	addi	t3, x0, P_HEIGHT
 	sub	t2, t2, t3
 	
-	beq	t1, t2, WORLD_PAGE	# if player y already HEIGHT-P_HEIGHT, can't move down
+	beq	t1, t2, WORLD_START	# if player y already HEIGHT-P_HEIGHT, can't move down
 	addi	t1, t1, 1		# increment y by 1
 	sb	t1, 1(t0)		# store incremented y
 	j	WORLD_START
@@ -135,13 +160,32 @@ ISR:
 	mret
 	
 # draw player on screen using coordinates in memory
-# modifies t0, t1, t3, a0, a1, a2, a3, a4
+# modifies t0, t1, t2, t3, t4, t5, a0, a1, a2, a3, a4
 DRAW_PLAYER:
 	addi	sp, sp, -4
 	sw	ra, 0(sp)
 	
 	la	t3, PLAYER		# get address of player coords
 	
+	#draw body
+	lb	a0, 0(t3)		# player x coord
+	lb	a1, 1(t3)		# player y coord
+	addi	a1, a1, 3
+	addi	a2, a0, P_WIDTH
+	addi	a2, a2, -1
+	addi	a4, a1, 1
+	addi	a3, x0, BLUE
+	call	DRAW_RECT
+	
+	# draw head based on orientation
+	lb	t2, 2(t3)		# get player orientation
+	addi	t5, x0, 1
+	beq	t2, t5, OR_UP		# player orientation up
+	addi	t5, t5, 1
+	beq	t2, t5, OR_LEFT		# player orientation left
+	addi	t5, t5, 1
+	beq	t2, t5, OR_RIGHT	# player orientation right
+OR_DOWN:
 	# draw hair
 	lb	a0, 0(t3)		# player x coord
 	lb	a1, 1(t3)		# player y coord
@@ -174,17 +218,103 @@ DRAW_PLAYER:
 	addi	a1, a1, 1
 	addi	a3, x0, RED
 	call	DRAW_DOT
-	
-	#draw body
+	j	OR_END
+OR_UP:
+	#draw hair
 	lb	a0, 0(t3)		# player x coord
 	lb	a1, 1(t3)		# player y coord
-	addi	a1, a1, 3
+	addi	a2, a0, P_WIDTH
+	addi	a2, a2, -1
+	addi	a4, a1, 2
+	addi	a3, x0, BROWN
+	call	DRAW_RECT
+	
+	# draw rest of head
+	lb	a0, 0(t3)		# player x coord
+	lb	a1, 1(t3)		# player y coord
+	addi	a1, a1, 2
+	addi	a2, a0, P_WIDTH
+	addi	a2, a2, -1
+	addi	a3, x0, WHITE
+	call	DRAW_HORIZ_LINE
+	j	OR_END
+	
+OR_LEFT:
+	#draw face
+	lb	a0, 0(t3)		# player x coord
+	lb	a1, 1(t3)		# player y coord
+	addi	a1, a1, 1
 	addi	a2, a0, P_WIDTH
 	addi	a2, a2, -1
 	addi	a4, a1, 1
-	addi	a3, x0, BLUE
+	addi	a3, x0, WHITE
 	call	DRAW_RECT
+
+	# draw hair
+	lb	a0, 0(t3)		# player x coord
+	lb	a1, 1(t3)		# player y coord
+	addi	a2, a0, P_WIDTH
+	addi	a2, a2, -1
+	addi	a3, x0, BROWN
+	call	DRAW_HORIZ_LINE
 	
+	lb	a0, 0(t3)		# player x coord
+	lb	a1, 1(t3)		# player y coord
+	addi	a0, a0, P_WIDTH
+	addi	a0, a0, -1
+	addi	a1, a1, 1
+	call	DRAW_DOT
+	
+	#draw face features
+	lb	a0, 0(t3)		# player x coord
+	lb	a1, 1(t3)		# player y coord
+	addi	a1, a1, 1
+	addi	a3, x0, BLACK
+	call	DRAW_DOT
+	
+	addi	a1, a1, 1
+	addi	a3, x0, RED
+	call	DRAW_DOT
+	j	OR_END
+OR_RIGHT:
+	#draw face
+	lb	a0, 0(t3)		# player x coord
+	lb	a1, 1(t3)		# player y coord
+	addi	a1, a1, 1
+	addi	a2, a0, P_WIDTH
+	addi	a2, a2, -1
+	addi	a4, a1, 1
+	addi	a3, x0, WHITE
+	call	DRAW_RECT
+
+	# draw hair
+	lb	a0, 0(t3)		# player x coord
+	lb	a1, 1(t3)		# player y coord
+	addi	a2, a0, P_WIDTH
+	addi	a2, a2, -1
+	addi	a3, x0, BROWN
+	call	DRAW_HORIZ_LINE
+	
+	lb	a0, 0(t3)		# player x coord
+	lb	a1, 1(t3)		# player y coord
+	addi	a1, a1, 1
+	call	DRAW_DOT
+	
+	#draw face features
+	lb	a0, 0(t3)		# player x coord
+	lb	a1, 1(t3)		# player y coord
+	addi	a0, a0, P_WIDTH
+	addi	a0, a0, -1
+	addi	a1, a1, 1
+	addi	a3, x0, BLACK
+	call	DRAW_DOT
+	
+	addi	a1, a1, 1
+	addi	a3, x0, RED
+	call	DRAW_DOT
+	j	OR_END
+	
+OR_END:
 	lw	ra, 0(sp)
 	addi	sp, sp, 4
 	ret
