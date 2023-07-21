@@ -72,7 +72,36 @@ WORLD_PAGE:
 	
 	# on interrupt
 	addi	s1, x0, 0		# clear interrupt flag
+	
+	# move character
+	lw	t0, 0x100(s0)		# read keyboard input
+	addi	t1, x0, 0x1C
+	beq	t0, t1, P_MOVE_LEFT	# check if 'A' was pressed
+	addi	t1, x0, 0x23
+	beq	t0, t1, P_MOVE_RIGHT	# check if 'D' was pressed
 	j	WORLD_PAGE
+P_MOVE_LEFT:
+	# get player x and dec by 1, if allowed
+	la	t0, PLAYER
+	lb	t1, 0(t0)		# load player x
+	beqz	t1, WORLD_PAGE		# if player x already 0, can't move left
+	addi	t1, t1, -1		# decrement x by 1
+	sb	t1, 0(t0)		# store decremented x
+	j	WORLD_START
+P_MOVE_RIGHT:
+	# get player x and dec by 1, if allowed
+	la	t0, PLAYER
+	lb	t1, 0(t0)		# load player x
+	
+	# get max possible x
+	addi	t2, x0, WIDTH	
+	addi	t3, x0, P_WIDTH	
+	sub	t2, t2, t3
+	
+	beq	t1, t2, WORLD_PAGE	# if player x already WIDTH-P_WIDTH, can't move right
+	addi	t1, t1, 1		# increment x by 1
+	sb	t1, 0(t0)		# store incremented x
+	j	WORLD_START
         
 # interrupt service routine
 ISR:
