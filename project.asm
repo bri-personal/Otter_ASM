@@ -1,11 +1,13 @@
 # define addresses and INTR enable
-.eqv	MMIO	0x11000000		# first MMIO address
-.eqv	STACK	0x10000			# stack address
-.eqv	INT_EN	8			# enable interrupts
+.eqv	MMIO		0x11000000	# first MMIO address
+.eqv	STACK		0x10000		# stack address
+.eqv	INT_EN		8		# enable interrupts
 
-# define screen dimensions
-.eqv	WIDTH	80
-.eqv	HEIGHT	60
+# define dimensions
+.eqv	WIDTH		80
+.eqv	HEIGHT		60
+.eqv	P_WIDTH		3
+.eqv	P_HEIGHT	5
 
 # define colors
 .eqv	BLACK	0
@@ -13,22 +15,25 @@
 .eqv	RED	0xE0
 .eqv	GREEN	0x1C
 .eqv	BLUE	0x03
+.eqv	D_GREEN	0x08
+.eqv	BROWN	0x89
 
 # predefined arrays in data segment
 .data
-F:	.space	4
+PLAYER:	.space	2	# player x and y coords, top of rectangle
 
 # executed code
 .text
-START:
+MAIN:
 	# initialize important values/addresses
 	li	sp, STACK		# setup sp
         li	s0, MMIO		# setup MMIO pointer
         addi	s1, x0, 0		# set interrupt flag to 0
         
-        # fill background with white
-        addi	a3, x0, GREEN		# set color
-        call	DRAW_BG			# fill background
+        # initialize player position
+        la	t0, PLAYER		# load address of player pos
+        sb	x0, 0(t0)		# x pos
+        sb	x0, 1(t0)		# y pos
         
         # setup ISR address
         la	t0, ISR
@@ -38,22 +43,96 @@ START:
         li	t0, INT_EN
         csrrw	x0, mstatus, t0
         
-LOOP:
-	beqz	s1, LOOP		# check interrupt flag
+        # go to title page
+        j	TITLE_START
+	
+# title page shown when game first opens
+TITLE_START:
+	# fill background with dark green
+        addi	a3, x0, D_GREEN		# set color
+        call	DRAW_BG			# fill background
+TITLE_PAGE:
+	beqz	s1, TITLE_PAGE		# check for interrupt
+	
+	# on interrupt
 	addi	s1, x0, 0		# clear interrupt flag
+	lw	t0, 0x100(s0)		# read keyboard input
+	addi	t1, x0, 0x1C
+	beq	t0, t1, WORLD_START	# check if key pressed was 'A'
+	j	TITLE_PAGE
 	
-	addi	a0, x0, 10
-	addi	a1, x0, 10
-	addi	a2, a0, 10
-	addi	a4, a1, 10
-	addi	a3, x0, RED
-	call DRAW_RECT
+# page opened after title page
+WORLD_START:
+	# fill background with green
+        addi	a3, x0, GREEN		# set color
+        call	DRAW_BG			# fill background
+        call	DRAW_PLAYER		# draw player
+WORLD_PAGE:
+	beqz	s1, WORLD_PAGE		# check for interrupt
 	
-	j	LOOP
+	# on interrupt
+	addi	s1, x0, 0		# clear interrupt flag
+	j	WORLD_PAGE
         
+# interrupt service routine
 ISR:
-	addi	s1, x0, 1		#set interrupt flag high
+	addi	s1, x0, 1		# set interrupt flag high
 	mret
+	
+# draw player on screen using coordinates in memory
+# modifies t0, t1, t3, a0, a1, a2, a3, a4
+DRAW_PLAYER:
+	addi	sp, sp, -4
+	sw	ra, 0(sp)
+	
+	la	t3, PLAYER		# get address of player coords
+	
+	# draw hair
+	lb	a0, 0(t3)		# player x coord
+	lb	a1, 1(t3)		# player y coord
+	addi	a2, a0, P_WIDTH
+	addi	a2, a2, -1
+	addi	a3, x0, BROWN
+	call	DRAW_HORIZ_LINE
+	
+	#draw face
+	lb	a0, 0(t3)		# player x coord
+	lb	a1, 1(t3)		# player y coord
+	addi	a1, a1, 1
+	addi	a2, a0, P_WIDTH
+	addi	a2, a2, -1
+	addi	a4, a1, 1
+	addi	a3, x0, WHITE
+	call	DRAW_RECT
+	
+	#draw face features
+	lb	a0, 0(t3)		# player x coord
+	lb	a1, 1(t3)		# player y coord
+	addi	a1, a1, 1
+	addi	a3, x0, BLACK
+	call	DRAW_DOT
+	
+	addi	a0, a0, 2
+	call	DRAW_DOT
+	
+	addi	a0, a0, -1
+	addi	a1, a1, 1
+	addi	a3, x0, RED
+	call	DRAW_DOT
+	
+	#draw body
+	lb	a0, 0(t3)		# player x coord
+	lb	a1, 1(t3)		# player y coord
+	addi	a1, a1, 3
+	addi	a2, a0, P_WIDTH
+	addi	a2, a2, -1
+	addi	a4, a1, 1
+	addi	a3, x0, BLUE
+	call	DRAW_RECT
+	
+	lw	ra, 0(sp)
+	addi	sp, sp, 4
+	ret
 	
 	
 # VGA subroutines #################################################
@@ -77,7 +156,7 @@ DRAW_HORIZ_1:
 DRAW_VERT_LINE:
 	addi	sp, sp, -4
 	sw	ra, 0(sp)
-	addi	a2, a2, 1
+	addi	a2, a2, 1		# go from a1 to a2 inclusive
 DRAW_VERT_1:
 	call	DRAW_DOT		# must not modify: a0, a1, a2, a3
 	addi	a1, a1, 1
@@ -110,7 +189,7 @@ DRAW_BG:
 DRAW_RECT:
 	addi	sp, sp, -4
 	sw	ra, 0(sp)
-	addi	a4, a4, 1
+	addi	a4, a4, 1		# go from a1 to a4 inclusive
 	mv	t2, a0			# save start x
 RECT_START:
 	call	DRAW_HORIZ_LINE		# must not modify: a1, a3
