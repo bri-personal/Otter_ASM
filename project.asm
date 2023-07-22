@@ -24,7 +24,8 @@
 # 0: x coord of top of rectangle
 # 1: y coord of top of rectange
 # 2: orientation (0=down, 1=up, 2=left, 3=right)
-PLAYER:	.space	3
+# 3-17: pixels behind it that can be redrawn after. amount of bytes must equal P_WIDTH*P_HEIGHT
+PLAYER:	.space	18
 
 # executed code
 .text
@@ -71,6 +72,7 @@ WORLD_START:
 	# fill background with green
         addi	a3, x0, GREEN		# set color
         call	DRAW_BG			# fill background
+WORLD_UPDATE:
         call	DRAW_PLAYER		# draw player
 WORLD_PAGE:
 	beqz	s1, WORLD_PAGE		# check for interrupt
@@ -98,10 +100,16 @@ P_MOVE_LEFT:
 	
 	# get player x and dec by 1, if allowed
 	lb	t1, 0(t0)		# load player x
-	beqz	t1, WORLD_START		# if player x already 0, can't move left
+	beqz	t1, WORLD_UPDATE	# if player x already 0, can't move left
 	addi	t1, t1, -1		# decrement x by 1
-	sb	t1, 0(t0)		# store decremented x	
-	j	WORLD_START
+	sb	t1, 0(t0)		# store decremented x
+	
+	# clear pixels where player was
+	addi	a0, t1, 1
+	lb	a1, 1(t0)
+	call	CLEAR_PLAYER
+	
+	j	WORLD_UPDATE
 P_MOVE_RIGHT:
 	la	t0, PLAYER
 	
@@ -114,13 +122,19 @@ P_MOVE_RIGHT:
 	
 	# get max possible x
 	addi	t2, x0, WIDTH	
-	addi	t3, x0, P_WIDTH	
-	sub	t2, t2, t3
+	addi	t2, t2, -P_WIDTH
+	beq	t1, t2, WORLD_UPDATE	# if player x already WIDTH-P_WIDTH, can't move right
 	
-	beq	t1, t2, WORLD_START	# if player x already WIDTH-P_WIDTH, can't move right
+	# can move right
 	addi	t1, t1, 1		# increment x by 1
 	sb	t1, 0(t0)		# store incremented x
-	j	WORLD_START
+	
+	# clear pixels where player was
+	addi	a0, t1, -1
+	lb	a1, 1(t0)
+	call	CLEAR_PLAYER
+	
+	j	WORLD_UPDATE
 P_MOVE_UP:
 	la	t0, PLAYER
 	
@@ -130,10 +144,16 @@ P_MOVE_UP:
 	
 	# get player y and dec by 1, if allowed
 	lb	t1, 1(t0)		# load player y
-	beqz	t1, WORLD_START		# if player y already 0, can't move up
+	beqz	t1, WORLD_UPDATE	# if player y already 0, can't move up
 	addi	t1, t1, -1		# decrement y by 1
 	sb	t1, 1(t0)		# store decremented y
-	j	WORLD_START
+	
+	# clear pixels where player was
+	addi	a1, t1, 1
+	lb	a0, 0(t0)
+	call	CLEAR_PLAYER
+	
+	j	WORLD_UPDATE
 P_MOVE_DOWN:
 	la	t0, PLAYER
 	
@@ -146,13 +166,18 @@ P_MOVE_DOWN:
 	
 	# get max possible x
 	addi	t2, x0, HEIGHT
-	addi	t3, x0, P_HEIGHT
-	sub	t2, t2, t3
+	addi	t2, t2, -P_HEIGHT
 	
-	beq	t1, t2, WORLD_START	# if player y already HEIGHT-P_HEIGHT, can't move down
+	beq	t1, t2, WORLD_UPDATE	# if player y already HEIGHT-P_HEIGHT, can't move down
 	addi	t1, t1, 1		# increment y by 1
 	sb	t1, 1(t0)		# store incremented y
-	j	WORLD_START
+	
+	# clear pixels where player was
+	addi	a1, t1, -1
+	lb	a0, 0(t0)
+	call	CLEAR_PLAYER
+	
+	j	WORLD_UPDATE
         
 # interrupt service routine
 ISR:
@@ -167,7 +192,23 @@ DRAW_PLAYER:
 	
 	la	t3, PLAYER		# get address of player coords
 	
-	#draw body
+	# read colors of pixels where player will be
+	addi	t2, t3, 3		# get address of start of array of pixels
+	lb	a0, 0(t3)		# player x coord
+	lb	a1, 1(t3)		# player y coord
+	addi	t4, t2, 15		# get end of array
+	addi	t5, a0, P_WIDTH		# get player width to know when to go to next row
+P_READ_LOOP:
+	call	READ_DOT
+	sb	a3, 0(t2)		# store color at first pixel
+	addi	t2, t2, 1		# increment to next index
+	addi	a0, a0, 1		# increment x read
+	blt	a0, t5, P_READ_LOOP	# if not too far right, go to next loop
+	addi	a0, a0, -P_WIDTH	# if too far right, revert x to first pos and inc y
+	addi	a1, a1, 1
+	blt	t2, t4, P_READ_LOOP
+	
+	# draw body
 	lb	a0, 0(t3)		# player x coord
 	lb	a1, 1(t3)		# player y coord
 	addi	a1, a1, 3
@@ -319,6 +360,31 @@ OR_END:
 	addi	sp, sp, 4
 	ret
 	
+# clear player and replace with previous background colors
+# modifies t0, t1, t2, t3, t4, a0, a1, a3
+# a0 and a1 must start as player topleft coords
+CLEAR_PLAYER:
+	addi	sp, sp, -4
+	sw	ra, 0(sp)
+	
+	# fill the pixels with bg colors
+	addi	t3, t0, 3		# initialize pointer to colors array
+	addi	t2, t3, 15		# get end of array
+	addi	t4, a0, P_WIDTH		# get x limit for drawing player
+P_CLEAR_LOOP:
+	lb	a3, 0(t3)		# get color at dot
+	call	DRAW_DOT		# draw dot where player was
+	addi	t3, t3, 1		# increment pointer to next
+	addi	a0, a0, 1		# increment x read
+	blt	a0, t4, P_CLEAR_LOOP	# if not too far right, go to next loop
+	addi	a0, a0, -P_WIDTH	# if too far right, revert x to first pos and inc y
+	addi	a1, a1, 1
+	blt	t3, t2, P_CLEAR_LOOP	# continue drawing until reach bottom of player
+	
+	lw	ra, 0(sp)
+	addi	sp, sp, 4
+	ret
+	
 	
 # VGA subroutines #################################################
 
@@ -397,9 +463,25 @@ DRAW_DOT:
 	andi	t1, a1, 0x3F		# select bottom 6 bits  (row)
 	slli	t1, t1, 7		# {a1[5:0],a0[6:0]} 
 	or	t0, t1, t0		# 13-bit address
-	li	t1, MMIO		# ADDED - load MMIO address
-	sw	t0, 0x120(t1)		# write 13 address bits to register
-	sw	a3, 0x140(t1)		# write color data to frame buffer
+	sw	t0, 0x120(s0)		# write 13 address bits to register
+	sw	a3, 0x140(s0)		# write color data to frame buffer
+	lw	ra, 0(sp)
+	addi	sp, sp, 4
+	ret
+
+# reads color from the display at the given coordinates:
+# 	(X,Y) = (a0,a1) with a color stored in a3
+# 	(col, row) = (a0,a1)
+# Modifies (directly or indirectly): t0, t1, a3
+READ_DOT:
+	addi	sp, sp, -4
+	sw	ra, 0(sp)
+	andi	t0, a0, 0x7F		# select bottom 7 bits (col)
+	andi	t1, a1, 0x3F		# select bottom 6 bits  (row)
+	slli	t1, t1, 7		# {a1[5:0],a0[6:0]} 
+	or	t0, t1, t0		# 13-bit address
+	sw	t0, 0x120(s0)		# write 13 address bits to register
+	lb	a3, 0x160(s0)		# write color data to frame buffer
 	lw	ra, 0(sp)
 	addi	sp, sp, 4
 	ret
