@@ -72,6 +72,7 @@ WORLD_START:
 	# fill background with green
         addi	a3, x0, GREEN		# set color
         call	DRAW_BG			# fill background
+        call	READ_PLAYER		# read player pixels before drawing player for first time
 WORLD_UPDATE:
         call	DRAW_PLAYER		# draw player
 WORLD_PAGE:
@@ -109,6 +110,8 @@ P_MOVE_LEFT:
 	lb	a1, 1(t0)
 	call	CLEAR_PLAYER
 	
+	call	READ_PLAYER		# read player pixels into memory before drawing
+	
 	j	WORLD_UPDATE
 P_MOVE_RIGHT:
 	la	t0, PLAYER
@@ -134,6 +137,8 @@ P_MOVE_RIGHT:
 	lb	a1, 1(t0)
 	call	CLEAR_PLAYER
 	
+	call	READ_PLAYER		# read player pixels into memory before drawing
+	
 	j	WORLD_UPDATE
 P_MOVE_UP:
 	la	t0, PLAYER
@@ -152,6 +157,8 @@ P_MOVE_UP:
 	addi	a1, t1, 1
 	lb	a0, 0(t0)
 	call	CLEAR_PLAYER
+	
+	call	READ_PLAYER		# read player pixels into memory before drawing
 	
 	j	WORLD_UPDATE
 P_MOVE_DOWN:
@@ -177,6 +184,8 @@ P_MOVE_DOWN:
 	lb	a0, 0(t0)
 	call	CLEAR_PLAYER
 	
+	call	READ_PLAYER		# read player pixels into memory before drawing
+	
 	j	WORLD_UPDATE
         
 # interrupt service routine
@@ -191,23 +200,6 @@ DRAW_PLAYER:
 	sw	ra, 0(sp)
 	
 	la	t3, PLAYER		# get address of player coords
-	
-	# read colors of pixels where player will be
-	addi	t2, t3, 3		# get address of start of array of pixels
-	lb	a0, 0(t3)		# player x coord
-	lb	a1, 1(t3)		# player y coord
-	addi	t4, t2, 15		# get end of array
-	addi	t5, a0, P_WIDTH		# get player width to know when to go to next row
-P_READ_LOOP:
-	call	READ_DOT
-	sb	a3, 0(t2)		# store color at first pixel
-	addi	t2, t2, 1		# increment to next index
-	addi	a0, a0, 1		# increment x read
-	blt	a0, t5, P_READ_LOOP	# if not too far right, go to next loop
-	addi	a0, a0, -P_WIDTH	# if too far right, revert x to first pos and inc y
-	addi	a1, a1, 1
-	blt	t2, t4, P_READ_LOOP
-	
 	# draw body
 	lb	a0, 0(t3)		# player x coord
 	lb	a1, 1(t3)		# player y coord
@@ -359,6 +351,35 @@ OR_END:
 	lw	ra, 0(sp)
 	addi	sp, sp, 4
 	ret
+
+# read player pixels into player array in data segment of memory
+# modifies t0, t1, t2, t3, t4, t5, a0, a1, a3	
+READ_PLAYER:
+	addi	sp, sp, -4
+	sw	ra, 0(sp)
+	
+	la	t3, PLAYER		# get address of player coords
+	
+	# read colors of pixels where player will be
+	addi	t2, t3, 3		# get address of start of array of pixels
+	lb	a0, 0(t3)		# player x coord
+	lb	a1, 1(t3)		# player y coord
+	addi	t4, t2, 15		# get end of array
+	addi	t5, a0, P_WIDTH		# get player width to know when to go to next row
+P_READ_LOOP:
+	call	READ_DOT
+	sb	a3, 0(t2)		# store color at first pixel
+	addi	t2, t2, 1		# increment to next index
+	addi	a0, a0, 1		# increment x read
+	blt	a0, t5, P_READ_LOOP	# if not too far right, go to next loop
+	addi	a0, a0, -P_WIDTH	# if too far right, revert x to first pos and inc y
+	addi	a1, a1, 1
+	blt	t2, t4, P_READ_LOOP
+	
+	lw	ra, 0(sp)
+	addi	sp, sp, 4
+	ret
+	
 	
 # clear player and replace with previous background colors
 # modifies t0, t1, t2, t3, t4, a0, a1, a3
