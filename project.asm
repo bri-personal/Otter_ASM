@@ -8,6 +8,7 @@
 .eqv	HEIGHT		60
 .eqv	P_WIDTH		3
 .eqv	P_HEIGHT	5
+.eqv	P_AREA		15		# must be P_WIDTH * P_HEIGHT
 
 # define colors
 .eqv	BLACK	0
@@ -17,6 +18,12 @@
 .eqv	BLUE	0x03
 .eqv	D_GREEN	0x08
 .eqv	BROWN	0x89
+
+# define key codes
+.eqv	A_CODE	0x1C
+.eqv	D_CODE	0x23
+.eqv	S_CODE	0x1B
+.eqv	W_CODE	0x1D
 
 # predefined arrays in data segment
 .data
@@ -63,7 +70,7 @@ TITLE_PAGE:
 	# on interrupt
 	addi	s1, x0, 0		# clear interrupt flag
 	lw	t0, 0x100(s0)		# read keyboard input
-	addi	t1, x0, 0x1C
+	addi	t1, x0, A_CODE
 	beq	t0, t1, WORLD_START	# check if key pressed was 'A'
 	j	TITLE_PAGE
 	
@@ -83,13 +90,13 @@ WORLD_PAGE:
 	
 	# move character
 	lw	t0, 0x100(s0)		# read keyboard input
-	addi	t1, x0, 0x1C
+	addi	t1, x0, A_CODE
 	beq	t0, t1, P_MOVE_LEFT	# check if 'A' was pressed
-	addi	t1, x0, 0x23
+	addi	t1, x0, D_CODE
 	beq	t0, t1, P_MOVE_RIGHT	# check if 'D' was pressed
-	addi	t1, x0, 0x1D
+	addi	t1, x0, W_CODE
 	beq	t0, t1, P_MOVE_UP	# check if 'W' was pressed
-	addi	t1, x0, 0x1B
+	addi	t1, x0, S_CODE
 	beq	t0, t1, P_MOVE_DOWN	# check if 'S' was pressed
 	j	WORLD_PAGE
 P_MOVE_LEFT:
@@ -364,7 +371,7 @@ READ_PLAYER:
 	addi	t2, t3, 3		# get address of start of array of pixels
 	lb	a0, 0(t3)		# player x coord
 	lb	a1, 1(t3)		# player y coord
-	addi	t4, t2, 15		# get end of array
+	addi	t4, t2, P_AREA		# get end of array
 	addi	t5, a0, P_WIDTH		# get player width to know when to go to next row
 P_READ_LOOP:
 	call	READ_DOT
@@ -390,7 +397,7 @@ CLEAR_PLAYER:
 	
 	# fill the pixels with bg colors
 	addi	t3, t0, 3		# initialize pointer to colors array
-	addi	t2, t3, 15		# get end of array
+	addi	t2, t3, P_AREA		# get end of array
 	addi	t4, a0, P_WIDTH		# get x limit for drawing player
 P_CLEAR_LOOP:
 	lb	a3, 0(t3)		# get color at dot
