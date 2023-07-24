@@ -89,6 +89,7 @@ WORLD_START:
         call	DRAW_RECT
         
         call	READ_PLAYER		# read player pixels before drawing player for first time
+        call	DRAW_PLAYER		# draw player
 WORLD_UPDATE:
 	beqz	s1, WORLD_UPDATE	# check for interrupt
 	
@@ -418,7 +419,8 @@ CLEAR_PLAYER:
 	sw	ra, 0(sp)
 	
 	# fill the pixels with bg colors
-	addi	t3, t0, 3		# initialize pointer to colors array
+	la	t3, PLAYER
+	addi	t3, t3, 3		# initialize pointer to colors array
 	addi	t2, t3, P_AREA		# get end of array
 	addi	t4, a0, P_WIDTH		# get x limit for drawing player
 P_CLEAR_LOOP:
