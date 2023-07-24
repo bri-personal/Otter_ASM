@@ -65,15 +65,15 @@ TITLE_START:
 	# fill background with dark green
         addi	a3, x0, D_GREEN		# set color
         call	DRAW_BG			# fill background
-TITLE_PAGE:
-	beqz	s1, TITLE_PAGE		# check for interrupt
+TITLE_UPDATE:
+	beqz	s1, TITLE_UPDATE	# check for interrupt
 	
 	# on interrupt
 	addi	s1, x0, 0		# clear interrupt flag
 	lw	t0, 0x100(s0)		# read keyboard input
 	addi	t1, x0, A_CODE
 	beq	t0, t1, WORLD_START	# check if key pressed was 'A'
-	j	TITLE_PAGE
+	j	TITLE_UPDATE
 	
 # page opened after title page
 WORLD_START:
@@ -82,9 +82,7 @@ WORLD_START:
         call	DRAW_BG			# fill background
         call	READ_PLAYER		# read player pixels before drawing player for first time
 WORLD_UPDATE:
-        call	DRAW_PLAYER		# draw player
-WORLD_PAGE:
-	beqz	s1, WORLD_PAGE		# check for interrupt
+        beqz	s1, WORLD_UPDATE	# check for interrupt
 	
 	# on interrupt
 	addi	s1, x0, 0		# clear interrupt flag
@@ -99,7 +97,7 @@ WORLD_PAGE:
 	beq	t0, t1, P_MOVE_UP	# check if 'W' was pressed
 	addi	t1, x0, S_CODE
 	beq	t0, t1, P_MOVE_DOWN	# check if 'S' was pressed
-	j	WORLD_PAGE
+	j	WORLD_UPDATE
 P_MOVE_LEFT:
 	la	t2, PLAYER
 	
@@ -121,6 +119,7 @@ P_MOVE_LEFT:
 	call	CLEAR_PLAYER
 	
 	call	READ_PLAYER		# read player pixels into memory before drawing
+	call	DRAW_PLAYER		# draw player
 	
 	j	WORLD_UPDATE
 P_MOVE_RIGHT:
@@ -148,6 +147,7 @@ P_MOVE_RIGHT:
 	call	CLEAR_PLAYER
 	
 	call	READ_PLAYER		# read player pixels into memory before drawing
+	call	DRAW_PLAYER		# draw player
 	
 	j	WORLD_UPDATE
 P_MOVE_UP:
@@ -171,6 +171,7 @@ P_MOVE_UP:
 	call	CLEAR_PLAYER
 	
 	call	READ_PLAYER		# read player pixels into memory before drawing
+	call	DRAW_PLAYER		# draw player
 	
 	j	WORLD_UPDATE
 P_MOVE_DOWN:
@@ -198,6 +199,7 @@ P_MOVE_DOWN:
 	call	CLEAR_PLAYER
 	
 	call	READ_PLAYER		# read player pixels into memory before drawing
+	call	DRAW_PLAYER		# draw player
 	
 	j	WORLD_UPDATE
         
