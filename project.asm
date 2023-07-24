@@ -85,7 +85,7 @@ WORLD_START:
         addi	a1, x0, 20
         addi	a2, a0, 10
         addi	a4, a1, 10
-        addi	a3, x0, BLACK
+        addi	a3, x0, WALL_COLOR
         call	DRAW_RECT
         
         call	READ_PLAYER		# read player pixels before drawing player for first time
@@ -118,8 +118,16 @@ P_MOVE_LEFT:
 	lb	t3, 0(t2)		# load player x
 	beqz	t3, WORLD_UPDATE	# if player x already 0, can't move left
 	
+	# check player head for wall
 	addi	a0, t3, -1		# get x that player would be entering
 	lb	a1, 1(t2)		# get y that player would be entering
+	call	READ_DOT		# get color at that pixel
+	addi	t0, x0, WALL_COLOR
+	beq	a3, t0, WORLD_UPDATE	# if player is moving into wall, can't move left
+	
+	# check player foot for wall
+	addi	a1, a1, P_HEIGHT
+	addi	a1, a1, -1
 	call	READ_DOT		# get color at that pixel
 	addi	t0, x0, WALL_COLOR
 	beq	a3, t0, WORLD_UPDATE	# if player is moving into wall, can't move left
