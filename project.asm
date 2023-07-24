@@ -11,13 +11,14 @@
 .eqv	P_AREA		15		# must be P_WIDTH * P_HEIGHT
 
 # define colors
-.eqv	BLACK	0
-.eqv	WHITE	0xFF
-.eqv	RED	0xE0
-.eqv	GREEN	0x1C
-.eqv	BLUE	0x03
-.eqv	D_GREEN	0x08
-.eqv	BROWN	0x89
+.eqv	BLACK		0
+.eqv	WHITE		0xFF
+.eqv	RED		0xE0
+.eqv	GREEN		0x1C
+.eqv	BLUE		0x03
+.eqv	D_GREEN		0x08
+.eqv	BROWN		0x89
+.eqv	WALL_COLOR	BLACK
 
 # define key codes
 .eqv	A_CODE	0x1C
@@ -100,95 +101,100 @@ WORLD_PAGE:
 	beq	t0, t1, P_MOVE_DOWN	# check if 'S' was pressed
 	j	WORLD_PAGE
 P_MOVE_LEFT:
-	la	t0, PLAYER
+	la	t2, PLAYER
 	
 	# set orientation to left
-	addi	t1, x0, 2		
-	sb	t1, 2(t0)
+	addi	t0, x0, 2		
+	sb	t0, 2(t2)
 	
 	# get player x and dec by 1, if allowed
-	lb	t1, 0(t0)		# load player x
-	beqz	t1, WORLD_UPDATE	# if player x already 0, can't move left
-	addi	t1, t1, -1		# decrement x by 1
-	sb	t1, 0(t0)		# store decremented x
+	lb	t3, 0(t2)		# load player x
+	beqz	t3, WORLD_UPDATE	# if player x already 0, can't move left
+	
+	# can move left
+	addi	t3, t3, -1		# decrement x by 1
+	sb	t3, 0(t2)		# store decremented x
 	
 	# clear pixels where player was
-	addi	a0, t1, 1
-	lb	a1, 1(t0)
+	addi	a0, t3, 1
+	lb	a1, 1(t2)
 	call	CLEAR_PLAYER
 	
 	call	READ_PLAYER		# read player pixels into memory before drawing
 	
 	j	WORLD_UPDATE
 P_MOVE_RIGHT:
-	la	t0, PLAYER
+	la	t2, PLAYER
 	
 	# set orientation to right
-	addi	t1, x0, 3		
-	sb	t1, 2(t0)
+	addi	t0, x0, 3		
+	sb	t0, 2(t2)
 	
 	# get player x and inc by 1, if allowed
-	lb	t1, 0(t0)		# load player x
+	lb	t3, 0(t2)		# load player x
 	
 	# get max possible x
-	addi	t2, x0, WIDTH	
-	addi	t2, t2, -P_WIDTH
-	beq	t1, t2, WORLD_UPDATE	# if player x already WIDTH-P_WIDTH, can't move right
+	addi	t4, x0, WIDTH	
+	addi	t4, t4, -P_WIDTH
+	beq	t3, t4, WORLD_UPDATE	# if player x already WIDTH-P_WIDTH, can't move right
 	
 	# can move right
-	addi	t1, t1, 1		# increment x by 1
-	sb	t1, 0(t0)		# store incremented x
+	addi	t3, t3, 1		# increment x by 1
+	sb	t3, 0(t2)		# store incremented x
 	
 	# clear pixels where player was
-	addi	a0, t1, -1
-	lb	a1, 1(t0)
+	addi	a0, t3, -1
+	lb	a1, 1(t2)
 	call	CLEAR_PLAYER
 	
 	call	READ_PLAYER		# read player pixels into memory before drawing
 	
 	j	WORLD_UPDATE
 P_MOVE_UP:
-	la	t0, PLAYER
+	la	t2, PLAYER
 	
 	# set orientation to up
-	addi	t1, x0, 1		
-	sb	t1, 2(t0)
+	addi	t0, x0, 1		
+	sb	t0, 2(t2)
 	
 	# get player y and dec by 1, if allowed
-	lb	t1, 1(t0)		# load player y
-	beqz	t1, WORLD_UPDATE	# if player y already 0, can't move up
-	addi	t1, t1, -1		# decrement y by 1
-	sb	t1, 1(t0)		# store decremented y
+	lb	t3, 1(t2)		# load player y
+	beqz	t3, WORLD_UPDATE	# if player y already 0, can't move up
+	
+	# can move up
+	addi	t3, t3, -1		# decrement y by 1
+	sb	t3, 1(t2)		# store decremented y
 	
 	# clear pixels where player was
-	addi	a1, t1, 1
-	lb	a0, 0(t0)
+	addi	a1, t3, 1
+	lb	a0, 0(t2)
 	call	CLEAR_PLAYER
 	
 	call	READ_PLAYER		# read player pixels into memory before drawing
 	
 	j	WORLD_UPDATE
 P_MOVE_DOWN:
-	la	t0, PLAYER
+	la	t2, PLAYER
 	
 	# set orientation to down
-	addi	t1, x0, 0		
-	sb	t1, 2(t0)
+	addi	t0, x0, 0		
+	sb	t0, 2(t2)
 	
 	# get player y and inc by 1, if allowed
-	lb	t1, 1(t0)		# load player y
+	lb	t3, 1(t2)		# load player y
 	
 	# get max possible x
-	addi	t2, x0, HEIGHT
-	addi	t2, t2, -P_HEIGHT
+	addi	t4, x0, HEIGHT
+	addi	t4, t4, -P_HEIGHT
+	beq	t3, t4, WORLD_UPDATE	# if player y already HEIGHT-P_HEIGHT, can't move down
 	
-	beq	t1, t2, WORLD_UPDATE	# if player y already HEIGHT-P_HEIGHT, can't move down
-	addi	t1, t1, 1		# increment y by 1
-	sb	t1, 1(t0)		# store incremented y
+	# can move down
+	addi	t3, t3, 1		# increment y by 1
+	sb	t3, 1(t2)		# store incremented y
 	
 	# clear pixels where player was
-	addi	a1, t1, -1
-	lb	a0, 0(t0)
+	addi	a1, t3, -1
+	lb	a0, 0(t2)
 	call	CLEAR_PLAYER
 	
 	call	READ_PLAYER		# read player pixels into memory before drawing
