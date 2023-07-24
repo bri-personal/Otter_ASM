@@ -197,6 +197,20 @@ P_MOVE_UP:
 	lb	t3, 1(t2)		# load player y
 	beqz	t3, WORLD_UPDATE	# if player y already 0, can't move up
 	
+	# check player top left for wall
+	addi	a1, t3, -1		# get y that player would be entering
+	lb	a0, 0(t2)		# get x that player would be entering
+	call	READ_DOT		# get color at that pixel
+	addi	t0, x0, WALL_COLOR
+	beq	a3, t0, WORLD_UPDATE	# if player is moving into wall, can't move up
+	
+	# check player top right for wall
+	addi	a0, a0, P_WIDTH
+	addi	a0, a0, -1
+	call	READ_DOT		# get color at that pixel
+	addi	t0, x0, WALL_COLOR
+	beq	a3, t0, WORLD_UPDATE	# if player is moving into wall, can't move up
+	
 	# can move up
 	addi	t3, t3, -1		# decrement y by 1
 	sb	t3, 1(t2)		# store decremented y
@@ -223,6 +237,20 @@ P_MOVE_DOWN:
 	addi	t4, x0, HEIGHT
 	addi	t4, t4, -P_HEIGHT
 	beq	t3, t4, WORLD_UPDATE	# if player y already HEIGHT-P_HEIGHT, can't move down
+	
+	# check player bottom left for wall
+	addi	a1, t3, P_HEIGHT	# get y that player would be entering
+	lb	a0, 0(t2)		# get x that player would be entering
+	call	READ_DOT		# get color at that pixel
+	addi	t0, x0, WALL_COLOR
+	beq	a3, t0, WORLD_UPDATE	# if player is moving into wall, can't move up
+	
+	# check player bottom right for wall
+	addi	a0, a0, P_WIDTH
+	addi	a0, a0, -1
+	call	READ_DOT		# get color at that pixel
+	addi	t0, x0, WALL_COLOR
+	beq	a3, t0, WORLD_UPDATE	# if player is moving into wall, can't move up
 	
 	# can move down
 	addi	t3, t3, 1		# increment y by 1
