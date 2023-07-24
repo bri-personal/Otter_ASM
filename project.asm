@@ -89,9 +89,10 @@ WORLD_START:
         call	DRAW_RECT
         
         call	READ_PLAYER		# read player pixels before drawing player for first time
-        call	DRAW_PLAYER		# draw player
 WORLD_UPDATE:
-	beqz	s1, WORLD_UPDATE	# check for interrupt
+        call	DRAW_PLAYER		# draw player
+WORLD_PAGE:
+	beqz	s1, WORLD_PAGE	# check for interrupt
 	
 	# on interrupt
 	addi	s1, x0, 0		# clear interrupt flag
@@ -106,7 +107,7 @@ WORLD_UPDATE:
 	beq	t0, t1, P_MOVE_UP	# check if 'W' was pressed
 	addi	t1, x0, S_CODE
 	beq	t0, t1, P_MOVE_DOWN	# check if 'S' was pressed
-	j	WORLD_UPDATE
+	j	WORLD_PAGE
 P_MOVE_LEFT:
 	la	t2, PLAYER
 	
@@ -142,7 +143,6 @@ P_MOVE_LEFT:
 	call	CLEAR_PLAYER
 	
 	call	READ_PLAYER		# read player pixels into memory before drawing
-	call	DRAW_PLAYER		# draw player
 	
 	j	WORLD_UPDATE
 P_MOVE_RIGHT:
@@ -170,7 +170,6 @@ P_MOVE_RIGHT:
 	call	CLEAR_PLAYER
 	
 	call	READ_PLAYER		# read player pixels into memory before drawing
-	call	DRAW_PLAYER		# draw player
 	
 	j	WORLD_UPDATE
 P_MOVE_UP:
@@ -194,7 +193,6 @@ P_MOVE_UP:
 	call	CLEAR_PLAYER
 	
 	call	READ_PLAYER		# read player pixels into memory before drawing
-	call	DRAW_PLAYER		# draw player
 	
 	j	WORLD_UPDATE
 P_MOVE_DOWN:
@@ -222,7 +220,6 @@ P_MOVE_DOWN:
 	call	CLEAR_PLAYER
 	
 	call	READ_PLAYER		# read player pixels into memory before drawing
-	call	DRAW_PLAYER		# draw player
 	
 	j	WORLD_UPDATE
         
