@@ -18,7 +18,7 @@
 .eqv	BLUE		0x03
 .eqv	D_GREEN		0x08
 .eqv	BROWN		0x89
-.eqv	WALL_COLOR	BLACK
+.eqv	WALL_COLOR	D_GREEN
 
 # define key codes
 .eqv	A_CODE	0x1C
@@ -80,9 +80,17 @@ WORLD_START:
 	# fill background with green
         addi	a3, x0, GREEN		# set color
         call	DRAW_BG			# fill background
+        
+        addi	a0, x0, 20
+        addi	a1, x0, 20
+        addi	a2, a0, 10
+        addi	a4, a1, 10
+        addi	a3, x0, BLACK
+        call	DRAW_RECT
+        
         call	READ_PLAYER		# read player pixels before drawing player for first time
 WORLD_UPDATE:
-        beqz	s1, WORLD_UPDATE	# check for interrupt
+	beqz	s1, WORLD_UPDATE	# check for interrupt
 	
 	# on interrupt
 	addi	s1, x0, 0		# clear interrupt flag
@@ -105,9 +113,15 @@ P_MOVE_LEFT:
 	addi	t0, x0, 2		
 	sb	t0, 2(t2)
 	
-	# get player x and dec by 1, if allowed
+	# get player x and check if can move left
 	lb	t3, 0(t2)		# load player x
 	beqz	t3, WORLD_UPDATE	# if player x already 0, can't move left
+	
+	addi	a0, t3, -1		# get x that player would be entering
+	lb	a1, 1(t2)		# get y that player would be entering
+	call	READ_DOT		# get color at that pixel
+	addi	t0, x0, WALL_COLOR
+	beq	a3, t0, WORLD_UPDATE	# if player is moving into wall, can't move left
 	
 	# can move left
 	addi	t3, t3, -1		# decrement x by 1
