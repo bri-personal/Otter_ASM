@@ -160,6 +160,20 @@ P_MOVE_RIGHT:
 	addi	t4, t4, -P_WIDTH
 	beq	t3, t4, WORLD_UPDATE	# if player x already WIDTH-P_WIDTH, can't move right
 	
+	# check player head for wall
+	addi	a0, t3, P_WIDTH		# get x that player would be entering
+	lb	a1, 1(t2)		# get y that player would be entering
+	call	READ_DOT		# get color at that pixel
+	addi	t0, x0, WALL_COLOR
+	beq	a3, t0, WORLD_UPDATE	# if player is moving into wall, can't move right
+	
+	# check player foot for wall
+	addi	a1, a1, P_HEIGHT
+	addi	a1, a1, -1
+	call	READ_DOT		# get color at that pixel
+	addi	t0, x0, WALL_COLOR
+	beq	a3, t0, WORLD_UPDATE	# if player is moving into wall, can't move right
+	
 	# can move right
 	addi	t3, t3, 1		# increment x by 1
 	sb	t3, 0(t2)		# store incremented x
