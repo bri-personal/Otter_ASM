@@ -9,6 +9,8 @@
 .eqv	P_WIDTH		3
 .eqv	P_HEIGHT	5
 .eqv	P_AREA		15		# must be P_WIDTH * P_HEIGHT
+.eqv	T_SIZE		5		# width and height of square tiles
+.eqv	NUM_TILES	192		# total number of tiles in world, currently enough to exactly fill 80x60 screen with 5x5 tiles
 
 # define colors
 .eqv	BLACK		0
@@ -32,8 +34,14 @@
 # 0: x coord of top of rectangle
 # 1: y coord of top of rectange
 # 2: orientation (0=down, 1=up, 2=left, 3=right)
-# 3-17: pixels behind it that can be redrawn after. amount of bytes must equal P_WIDTH*P_HEIGHT
+# 3-17: pixels behind it that can be redrawn after. amount of bytes must equal P_AREA (P_WIDTH*P_HEIGHT)
 PLAYER:	.space	18
+
+# world tiles data:
+# number of bytes = number of tiles, number corresponds to which tile is drawn
+# 0 - empty
+# 1 - wall
+TILES: .space NUM_TILES
 
 # executed code
 .text
@@ -77,16 +85,13 @@ TITLE_UPDATE:
 	
 # page opened after title page
 WORLD_START:
-	# fill background with green
-        addi	a3, x0, GREEN		# set color
-        call	DRAW_BG			# fill background
-        
-        addi	a0, x0, 20
-        addi	a1, x0, 20
-        addi	a2, a0, 10
-        addi	a4, a1, 10
-        addi	a3, x0, WALL_COLOR
-        call	DRAW_RECT
+	# add 1 wall tile
+	la	t0, TILES
+	addi	t1, x0, 1
+	sb	t1, 18(t0)
+	
+	# fill background with tiles
+        call	DRAW_WORLD		# fill background
         
         call	READ_PLAYER		# read player pixels before drawing player for first time
 WORLD_UPDATE:
@@ -480,6 +485,47 @@ P_CLEAR_LOOP:
 	addi	a1, a1, 1
 	blt	t3, t2, P_CLEAR_LOOP	# continue drawing until reach bottom of player
 	
+	lw	ra, 0(sp)
+	addi	sp, sp, 4
+	ret
+	
+# draw tiles on screen from world array
+# modifies t0, t1, t2, t3, t4, t5, a0, a1, a2, a3, a4
+DRAW_WORLD:
+	addi	sp, sp, -4
+	sw	ra, 0(sp)
+	
+	la	t3, TILES		# get tiles array pointer
+	addi	t4, t3, NUM_TILES	# get end of array
+	addi	t5, x0, WIDTH
+	addi	a0, x0, 0		# initialize drawing coords
+	addi	a1, x0, 0		
+LOAD_W_LOOP:
+	addi	a2, a0, T_SIZE		# get tile end coords
+	addi	a2, a2, -1
+	addi	a4, a1, T_SIZE
+	addi	a4, a4, -1
+	lb	t0, 0(t3)		# get tile byte
+	addi	t3, t3, 1		# go to next byte
+	bnez	t0, WALL_TILE		# draw tile using code from t5
+EMPTY_TILE:
+	addi	a3, x0, GREEN		# tile=0, blank background
+	j	DRAW_TILE
+WALL_TILE:
+	addi	a3, x0, WALL_COLOR	# tile=1, wall tile
+	j	DRAW_TILE
+DRAW_TILE:
+	call	DRAW_RECT		# draw tile
+	addi	a0, a0, T_SIZE		# move x to next tile
+	addi	a1, a1, -T_SIZE		# move y back to start
+	blt	a0, t5, LOAD_W_LOOP	# check if x is off screen
+	
+	# x off screen
+	addi	a0, x0, 0		# reset x
+	addi	a1, a1, T_SIZE		# put y back to next row
+	blt	t3, t4, LOAD_W_LOOP	# check if all tiles have been drawn
+
+	# all tiles drawn - done	
 	lw	ra, 0(sp)
 	addi	sp, sp, 4
 	ret
