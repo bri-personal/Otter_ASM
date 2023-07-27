@@ -496,8 +496,8 @@ DRAW_WORLD:
 	sw	ra, 0(sp)
 	
 	la	t3, TILES		# get tiles array pointer
-	addi	t4, t3, NUM_TILES	# get end of array
-	addi	t5, x0, WIDTH
+	addi	t4, x0, WIDTH		# get screen end x and y
+	addi	t5, x0, HEIGHT
 	addi	a0, x0, 0		# initialize drawing coords
 	addi	a1, x0, 0		
 LOAD_W_LOOP:
@@ -518,12 +518,12 @@ DRAW_TILE:
 	call	DRAW_RECT		# draw tile
 	addi	a0, a0, T_SIZE		# move x to next tile
 	addi	a1, a1, -T_SIZE		# move y back to start
-	blt	a0, t5, LOAD_W_LOOP	# check if x is off screen
+	blt	a0, t4, LOAD_W_LOOP	# check if x is off screen
 	
 	# x off screen
 	addi	a0, x0, 0		# reset x
 	addi	a1, a1, T_SIZE		# put y back to next row
-	blt	t3, t4, LOAD_W_LOOP	# check if all tiles have been drawn
+	blt	a1, t5, LOAD_W_LOOP	# check if all tiles have been drawn
 
 	# all tiles drawn - done	
 	lw	ra, 0(sp)
