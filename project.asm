@@ -184,6 +184,11 @@ P_MOVE_LEFT:
 	addi	s3, s3, -1		# dec tile offset
 	li	t1, UPPER_MASK
 	and	s2, s2, t1		# mask pixel offset to set x offset to 0
+	la	t2, PLAYER		# get player array address
+	lb	t3, 0(t2)		# get player x
+	addi	t3, t3, T_SIZE		# dec player x to 1 tile before to account for offset
+	sb	t3, 0(t2)		# store new x
+	call	DRAW_WORLD		# redraw tiles with new offset
 SKIP_T_INC_L:
 	j	WORLD_UPDATE
 	
@@ -236,6 +241,11 @@ P_MOVE_RIGHT:
 	addi	s3, s3, 1		# inc tile offset
 	li	t1, UPPER_MASK
 	and	s2, s2, t1		# mask pixel offset to set x offset to 0
+	la	t2, PLAYER		# get player array address
+	lb	t3, 0(t2)		# get player x
+	addi	t3, t3, -T_SIZE		# dec player x to 1 tile before to account for offset
+	sb	t3, 0(t2)		# store new x
+	call	DRAW_WORLD		# redraw tiles with new offset
 SKIP_T_INC_R:
 	j	WORLD_UPDATE
 	
@@ -549,6 +559,10 @@ DRAW_WORLD:
 	sw	ra, 0(sp)
 	
 	la	t3, TILES		# get tiles array pointer
+	mv	t0, s3			# get player tile offset x
+	li	t1, LOWER_MASK
+	and	t0, t0, t1
+	add	t3, t3, t0		# add tile offset to start index
 	addi	t6, t3, T_PER_ROW	# get start index of next row
 	addi	t4, x0, WIDTH		# get screen end x and y
 	addi	t5, x0, HEIGHT
