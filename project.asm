@@ -167,6 +167,13 @@ P_MOVE_LEFT:
 	# can move left
 	addi	t3, t3, -1		# decrement x by 1
 	sb	t3, 0(t2)		# store decremented x
+	
+	# clear pixels where player was
+	addi	a0, t3, 1
+	lb	a1, 1(t2)
+	call	CLEAR_PLAYER
+	call	READ_PLAYER		# read player pixels into memory before drawing
+	
 	addi	s2, s2, -1		# decrement pixel offset x by 1
 	li	t1, LOWER_MASK
 	and	t1, s2, t1		# mask to get lower bits of pixel offset
@@ -177,16 +184,9 @@ P_MOVE_LEFT:
 	addi	s3, s3, -1		# dec tile offset
 	li	t1, UPPER_MASK
 	and	s2, s2, t1		# mask pixel offset to set x offset to 0
-	
-	# clear pixels where player was
 SKIP_T_INC_L:
-	addi	a0, t3, 1
-	lb	a1, 1(t2)
-	call	CLEAR_PLAYER
-	
-	call	READ_PLAYER		# read player pixels into memory before drawing
-	
 	j	WORLD_UPDATE
+	
 P_MOVE_RIGHT:
 	la	t2, PLAYER
 	
@@ -219,6 +219,13 @@ P_MOVE_RIGHT:
 	# can move right
 	addi	t3, t3, 1		# increment x by 1
 	sb	t3, 0(t2)		# store incremented x
+	
+	# clear pixels where player was
+	addi	a0, t3, -1
+	lb	a1, 1(t2)
+	call	CLEAR_PLAYER
+	call	READ_PLAYER		# read player pixels into memory before drawing
+	
 	addi	s2, s2, 1		# increment pixel offset x by 1
 	li	t1, LOWER_MASK
 	and	t1, s2, t1		# mask to get lower bits of pixel offset
@@ -229,16 +236,9 @@ P_MOVE_RIGHT:
 	addi	s3, s3, 1		# inc tile offset
 	li	t1, UPPER_MASK
 	and	s2, s2, t1		# mask pixel offset to set x offset to 0
-	
-	# clear pixels where player was
 SKIP_T_INC_R:
-	addi	a0, t3, -1
-	lb	a1, 1(t2)
-	call	CLEAR_PLAYER
-	
-	call	READ_PLAYER		# read player pixels into memory before drawing
-	
 	j	WORLD_UPDATE
+	
 P_MOVE_UP:
 	la	t2, PLAYER
 	
@@ -267,17 +267,18 @@ P_MOVE_UP:
 	# can move up
 	addi	t3, t3, -1		# decrement y by 1
 	sb	t3, 1(t2)		# store decremented y
-	li	t0, 0x10000
-	sub	s2, s2, t0		# decrement pixel offset y by 1
 	
 	# clear pixels where player was
 	addi	a1, t3, 1
 	lb	a0, 0(t2)
 	call	CLEAR_PLAYER
-	
 	call	READ_PLAYER		# read player pixels into memory before drawing
+		
+	li	t0, 0x10000
+	sub	s2, s2, t0		# decrement pixel offset y by 1
 	
 	j	WORLD_UPDATE
+	
 P_MOVE_DOWN:
 	la	t2, PLAYER
 	
@@ -310,15 +311,15 @@ P_MOVE_DOWN:
 	# can move down
 	addi	t3, t3, 1		# increment y by 1
 	sb	t3, 1(t2)		# store incremented y
-	li	t0, 0x10000
-	add	s2, s2, t0		# increment pixel offset y by 1
 	
 	# clear pixels where player was
 	addi	a1, t3, -1
 	lb	a0, 0(t2)
 	call	CLEAR_PLAYER
-	
 	call	READ_PLAYER		# read player pixels into memory before drawing
+	
+	li	t0, 0x10000
+	add	s2, s2, t0		# increment pixel offset y by 1
 	
 	j	WORLD_UPDATE
         
