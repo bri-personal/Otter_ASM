@@ -10,7 +10,9 @@
 .eqv	P_HEIGHT	5
 .eqv	P_AREA		15		# must be P_WIDTH * P_HEIGHT
 .eqv	T_SIZE		5		# width and height of square tiles
-.eqv	NUM_TILES	192		# total number of tiles in world, currently enough to exactly fill 80x60 screen with 5x5 tiles
+.eqv	T_PER_ROW	20		# number of tiles per row, 16 fills exactly with 5x5
+.eqv	T_PER_COL	12		# number of tiles per column, 12 fills exactly with 5x5
+.eqv	NUM_TILES	240		# total number of tiles in world, must be T_PER_ROW * T_PER_COL
 
 # define colors
 .eqv	BLACK		0
@@ -27,6 +29,10 @@
 .eqv	D_CODE	0x23
 .eqv	S_CODE	0x1B
 .eqv	W_CODE	0x1D
+
+# define bitmasks
+.eqv	UPPER_MASK	0xFFFF0000
+.eqv	LOWER_MASK	0x0000FFFF
 
 # predefined arrays in data segment
 .data
@@ -57,6 +63,27 @@ MAIN:
         sb	x0, 1(t0)		# y pos
         sb	x0, 2(t0)		# orientation, down to start
         
+        # load world tiles
+        la	t0, TILES		# get tiles array address
+        addi	t2, t0, NUM_TILES	# get end of array
+LOAD_T_ROW:
+        li	t1, 0x00000000
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x00000000
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x00000000
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x01000000
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x01000000
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        blt	t0, t2, LOAD_T_ROW	# check if not at end of array yet
+        
         # setup ISR address
         la	t0, ISR
         csrrw	x0, mtvec, t0
@@ -85,11 +112,10 @@ TITLE_UPDATE:
 	
 # page opened after title page
 WORLD_START:
-	# add 1 wall tile
-	la	t0, TILES
-	addi	t1, x0, 1
-	sb	t1, 18(t0)
-	
+	# initialize player offset
+        addi	s2, x0, 0		# pixel offset - 4 lsb for x, 4 msb for y
+        addi	s3, x0, 0		# tile offset - 4 lsb for x, 4 msb for y
+
 	# fill background with tiles
         call	DRAW_WORLD		# fill background
         
@@ -141,8 +167,19 @@ P_MOVE_LEFT:
 	# can move left
 	addi	t3, t3, -1		# decrement x by 1
 	sb	t3, 0(t2)		# store decremented x
+	addi	s2, s2, -1		# decrement pixel offset x by 1
+	li	t1, LOWER_MASK
+	and	t1, s2, t1		# mask to get lower bits of pixel offset
+	addi	t4, x0, -T_SIZE
+	bgt	t1, t4, SKIP_T_INC_L	# if pixel offset x gets to tile size, dec tile offset
+	
+	# dec tile offset and reset pixel offset
+	addi	s3, s3, -1		# dec tile offset
+	li	t1, UPPER_MASK
+	and	s2, s2, t1		# mask pixel offset to set x offset to 0
 	
 	# clear pixels where player was
+SKIP_T_INC_L:
 	addi	a0, t3, 1
 	lb	a1, 1(t2)
 	call	CLEAR_PLAYER
@@ -182,8 +219,19 @@ P_MOVE_RIGHT:
 	# can move right
 	addi	t3, t3, 1		# increment x by 1
 	sb	t3, 0(t2)		# store incremented x
+	addi	s2, s2, 1		# increment pixel offset x by 1
+	li	t1, LOWER_MASK
+	and	t1, s2, t1		# mask to get lower bits of pixel offset
+	addi	t4, x0, T_SIZE
+	blt	t1, t4, SKIP_T_INC_R	# if pixel offset x gets to tile size, inc tile offset
+	
+	# inc tile offset and reset pixel offset
+	addi	s3, s3, 1		# inc tile offset
+	li	t1, UPPER_MASK
+	and	s2, s2, t1		# mask pixel offset to set x offset to 0
 	
 	# clear pixels where player was
+SKIP_T_INC_R:
 	addi	a0, t3, -1
 	lb	a1, 1(t2)
 	call	CLEAR_PLAYER
@@ -219,6 +267,8 @@ P_MOVE_UP:
 	# can move up
 	addi	t3, t3, -1		# decrement y by 1
 	sb	t3, 1(t2)		# store decremented y
+	li	t0, 0x10000
+	sub	s2, s2, t0		# decrement pixel offset y by 1
 	
 	# clear pixels where player was
 	addi	a1, t3, 1
@@ -260,6 +310,8 @@ P_MOVE_DOWN:
 	# can move down
 	addi	t3, t3, 1		# increment y by 1
 	sb	t3, 1(t2)		# store incremented y
+	li	t0, 0x10000
+	add	s2, s2, t0		# increment pixel offset y by 1
 	
 	# clear pixels where player was
 	addi	a1, t3, -1
@@ -490,12 +542,13 @@ P_CLEAR_LOOP:
 	ret
 	
 # draw tiles on screen from world array
-# modifies t0, t1, t2, t3, t4, t5, a0, a1, a2, a3, a4
+# modifies t0, t1, t2, t3, t4, t5, t6, a0, a1, a2, a3, a4
 DRAW_WORLD:
 	addi	sp, sp, -4
 	sw	ra, 0(sp)
 	
 	la	t3, TILES		# get tiles array pointer
+	addi	t6, t3, T_PER_ROW	# get start index of next row
 	addi	t4, x0, WIDTH		# get screen end x and y
 	addi	t5, x0, HEIGHT
 	addi	a0, x0, 0		# initialize drawing coords
@@ -523,6 +576,8 @@ DRAW_TILE:
 	# x off screen
 	addi	a0, x0, 0		# reset x
 	addi	a1, a1, T_SIZE		# put y back to next row
+	mv	t3, t6			# set tile array pointer to beginning of new row
+	addi	t6, t3, T_PER_ROW	# get start index of next row (after new row)
 	blt	a1, t5, LOAD_W_LOOP	# check if all tiles have been drawn
 
 	# all tiles drawn - done	
