@@ -24,7 +24,8 @@
 .eqv	T_ROW_ON_S	16		# number of tiles per row shown on screen
 .eqv	T_COL_ON_S	12		# number of tiles per column shown on screen
 .eqv	NUM_TILES	240		# total number of tiles in world, must be T_PER_ROW * T_PER_COL
-.eqv	T_MID		7		# tile offset to start moving right/left, should be about half of tiles per row shown on screen at once
+.eqv	T_MID_X		7		# tile offset to start moving screen view right/left, should be about half of tiles per row-1 shown on screen at once
+.eqv	T_MID_Y		5		# tile offset to start moving screen view up/down, should be about half of tiles per col-1 shown on screen at once
 
 # define colors
 .eqv	BLACK		0
@@ -53,9 +54,11 @@ PLAYER:	.space	18
 
 # player offset data
 # 0: pixel offset x - horiz pixel dist from prev tile
-# 1: tile offset x - tile dist from left side of world (even offscreen)
+# 1: tile offset x - tile dist from left side of world (even offscreen) used to calculate offset of first tile shown in row
 # 2: pixel offset y - vert pixel dist from prev tile
-# 3: tile offset y - tile dist from top of world (even offscreen)
+# 3: tile offset y - tile dist from top of world (even offscreen) used to calculate offset of first tile shown in row
+# NOTE: tile offsets stop increasing/decreasing when end/start of row in world is drawn, even if plaher continues moving right/left
+#	this is to prevent the offset of the first tile shown in the row from going to high/low since it is calculated as the diff btw tile offset and threshold
 OFFSET: .space 4
 
 # world tiles data:
@@ -207,14 +210,14 @@ P_MOVE_LEFT:
 	addi	t2, x0, -T_SIZE		# check against -TILE SIZE for tile offset change
 	bgt	t1, t2, WORLD_UPDATE	# if pixel offset x gets to tile size, dec tile offset
 	
-	# dec tile offset and reset pixel offset
+	# reset pixel offset and temporarily dec tile offset to check if it should decrease
 	sb	x0, 0(t0)		# store 0 to pixel offset x
 	lb	t3, 1(t0)		# load tile offset
 	addi	t3, t3, -1		# dec tile offset by 1
 	sb	t3, 1(t0)		# store new tile offset x
 	
 	# check if tile offset small enough to shift screen
-	addi	t1, x0, T_MID		# get threshold
+	addi	t1, x0, T_MID_X		# get threshold
 	bgt	t3, t1, WORLD_UPDATE	# check tile offset against threshold
 	
 	# offset small enough, shift tiles back and player forward
@@ -280,8 +283,8 @@ P_MOVE_RIGHT:
 	# check to see if offset is already at max for tiles in row
 	lb	t3, 1(t0)		# get player tile offset x
 	addi	t3, t3, 1		# inc tile offset by 1
-	addi	t1, t3, -T_MID		# get difference between player tile offset and threshold - tile offset of first tile shown in row	
-	addi	t2, x0, T_PER_ROW	# get total tiles per row
+	addi	t1, t3, -T_MID_X	# get difference between player tile offset and threshold - tile offset of first tile shown in row	
+	addi	t2, x0, T_PER_ROW
 	addi	t2, t2, -T_ROW_ON_S	# get greatest offset of first tile in row where last tile in row isn't too far in tiles array
 	bgt	t1, t2, WORLD_UPDATE	# if offset of first tile in row is too great, don't redraw
 	
@@ -606,7 +609,7 @@ DRAW_WORLD:
 	la	t3, TILES		# get tiles array pointer
 	la	t1, OFFSET		# get tile offset address
 	lb	t0, 1(t1)		# get player tile offset x
-	addi	t0, t0, -T_MID		# get difference between player tile offset and threshold
+	addi	t0, t0, -T_MID_X		# get difference between player tile offset and threshold
 	blez	t0, START_DRAW_W	# if diff is too small, don't shift
 	add	t3, t3, t0		# add tile offset to start index
 	j	START_DRAW_W
