@@ -117,6 +117,21 @@ LOAD_T_ROW:
         li	t1, 0x01000200
         sw	t1, 0(t0)
         addi	t0, t0, 4
+        li	t1, 0x00020002
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x00020002
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x00020002
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x00020002
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x01020002
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
         blt	t0, t2, LOAD_T_ROW	# check if not at end of array yet
         
         # setup ISR address
@@ -688,26 +703,47 @@ DRAW_WORLD:
 	
 	# get start index for tiles
 	la	t3, TILES_ARR		# get tiles array pointer
-	lw	t3, 0(t3)		# get first address of all tiles from tiles array
-	
-	# get tile offset to add to pointer
 	la	t1, OFFSET		# get tile offset address
+	
+	# get tile offset y to add to pointer
+	lb	t0, 3(t1)		# get player tile offset y
+	addi	t0, t0, -T_MID_Y	# get difference between player tile offset and threshold
+	
+	# check for player offset y too low
+	blez	t0, DW_GET_ADDR		# if diff is less than 0 or 0, pointer offset is 0. start each col such that first tile in col on screen is first tile in col of world
+	
+	# check for player offset y too high
+	addi	t2, x0, T_PER_COL
+	addi	t2, t2, -T_COL_ON_S	# get diff between total tiles per row and tiles shown per row on screen
+	bge	t0, t2, DW_OFFSET_MAX_Y	#if diff is greater than that^, pointer offset is that^. start each col such that last tile in col on screen is last tile in col of world
+	
+	# player offset y in appropriate range, add diff to pointer directly
+	slli	t0, t0, 2		# multiply offset by 4 to account for word addresses
+	add	t3, t3, t0		# get tile row offset to start index of tile array
+	j	DW_GET_ADDR
+DW_OFFSET_MAX_Y:
+	slli	t2, t2, 2		# multiply offset by 4 to account for word addresses
+	add	t3, t3, t2		# add max allowed offset to pointer, since actual offset is too big
+DW_GET_ADDR:
+	lw	t3, 0(t3)		# get first address of desired row in all tiles from tiles array
+	
+	# get tile offset x to add to pointer
 	lb	t0, 1(t1)		# get player tile offset x
 	addi	t0, t0, -T_MID_X	# get difference between player tile offset and threshold
 	
-	# check for player offset too low
+	# check for player offset x too low
 	blez	t0, START_DRAW_W	# if diff is less than 0 or 0, pointer offset is 0. start each row such that first tile in row on screen is first tile in row of world
 	
-	# check for player offset too high
-	addi	t1, x0, T_PER_ROW
-	addi	t1, t1, -T_ROW_ON_S	# get diff between total tiles per row and tiles shown per row on screen
-	bge	t0, t1, DW_OFFSET_MAX	# if diff is greater than that^, pointer offset is that^. start each row such that last tile in row on screen is last tile in row of world
+	# check for player offset x too high
+	addi	t2, x0, T_PER_ROW
+	addi	t2, t2, -T_ROW_ON_S	# get diff between total tiles per row and tiles shown per row on screen
+	bge	t0, t2, DW_OFFSET_MAX_X	# if diff is greater than that^, pointer offset is that^. start each row such that last tile in row on screen is last tile in row of world
 	
-	# player offset in appropriate range, add diff to pointer directly
-	add	t3, t3, t0		# add tile offset to start index
+	# player offset x in appropriate range, add diff to pointer directly
+	add	t3, t3, t0		# add tile col offset to start index of row of all tiles
 	j	START_DRAW_W
-DW_OFFSET_MAX:
-	add	t3, t3, t1		# add max allowed offset to pointer, since acutal offset is too big
+DW_OFFSET_MAX_X:
+	add	t3, t3, t2		# add max allowed offset to pointer, since acutal offset is too big
 START_DRAW_W:
 	addi	t6, t3, T_PER_ROW	# get start index of next row
 	addi	t4, x0, WIDTH		# get screen end x and y
