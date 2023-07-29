@@ -1,18 +1,30 @@
+# MOVING RIGHT WORKS, MOVING LEFT DOES NOT
+
 # define addresses and INTR enable
 .eqv	MMIO		0x11000000	# first MMIO address
 .eqv	STACK		0x10000		# stack address
 .eqv	INT_EN		8		# enable interrupts
 
 # define dimensions
+# screen dimension
 .eqv	WIDTH		80
 .eqv	HEIGHT		60
+
+# player dimensions
 .eqv	P_WIDTH		3
 .eqv	P_HEIGHT	5
 .eqv	P_AREA		15		# must be P_WIDTH * P_HEIGHT
+
+# tile dimensions
 .eqv	T_SIZE		5		# width and height of square tiles
+
+# world dimensions
 .eqv	T_PER_ROW	20		# number of tiles per row, 16 fills exactly with 5x5
 .eqv	T_PER_COL	12		# number of tiles per column, 12 fills exactly with 5x5
+.eqv	T_ROW_ON_S	16		# number of tiles per row shown on screen
+.eqv	T_COL_ON_S	12		# number of tiles per column shown on screen
 .eqv	NUM_TILES	240		# total number of tiles in world, must be T_PER_ROW * T_PER_COL
+.eqv	T_MID		8		# tile offset to start moving right/left, should be about half of tiles per row shown on screen at once
 
 # define colors
 .eqv	BLACK		0
@@ -30,10 +42,6 @@
 .eqv	S_CODE	0x1B
 .eqv	W_CODE	0x1D
 
-# define bitmasks
-.eqv	UPPER_MASK	0xFFFF0000
-.eqv	LOWER_MASK	0x0000FFFF
-
 # predefined arrays in data segment
 .data
 # player data:
@@ -42,6 +50,13 @@
 # 2: orientation (0=down, 1=up, 2=left, 3=right)
 # 3-17: pixels behind it that can be redrawn after. amount of bytes must equal P_AREA (P_WIDTH*P_HEIGHT)
 PLAYER:	.space	18
+
+# player offset data
+# 0: pixel offset x
+# 1: tile offset x
+# 2: pixel offset y
+# 3: tile offset y
+OFFSET: .space 4
 
 # world tiles data:
 # number of bytes = number of tiles, number corresponds to which tile is drawn
@@ -62,6 +77,10 @@ MAIN:
         sb	x0, 0(t0)		# x pos
         sb	x0, 1(t0)		# y pos
         sb	x0, 2(t0)		# orientation, down to start
+        
+        # initialize offsets
+        la	t0, OFFSET		# load offset address
+        sw	x0, 0(t0)		# fill with 0 for all offsets
         
         # load world tiles
         la	t0, TILES		# get tiles array address
@@ -112,15 +131,16 @@ TITLE_UPDATE:
 	
 # page opened after title page
 WORLD_START:
-	# initialize player offset
-        addi	s2, x0, 0		# pixel offset - 4 lsb for x, 4 msb for y
-        addi	s3, x0, 0		# tile offset - 4 lsb for x, 4 msb for y
-
 	# fill background with tiles
         call	DRAW_WORLD		# fill background
         
         call	READ_PLAYER		# read player pixels before drawing player for first time
 WORLD_UPDATE:
+	la	t0, OFFSET
+	lb	t1, 0(t0)
+	sb	t1, 0x20(s0)
+	lb	t1, 1(t0)
+	sb	t1, 0x40(s0)
         call	DRAW_PLAYER		# draw player
 WORLD_PAGE:
 	beqz	s1, WORLD_PAGE	# check for interrupt
@@ -140,7 +160,7 @@ WORLD_PAGE:
 	beq	t0, t1, P_MOVE_DOWN	# check if 'S' was pressed
 	j	WORLD_PAGE
 P_MOVE_LEFT:
-	la	t2, PLAYER
+	la	t2, PLAYER		# get player address
 	
 	# set orientation to left
 	addi	t0, x0, 2		
@@ -174,22 +194,32 @@ P_MOVE_LEFT:
 	call	CLEAR_PLAYER
 	call	READ_PLAYER		# read player pixels into memory before drawing
 	
-	addi	s2, s2, -1		# decrement pixel offset x by 1
-	li	t1, LOWER_MASK
-	and	t1, s2, t1		# mask to get lower bits of pixel offset
-	addi	t4, x0, -T_SIZE
-	bgt	t1, t4, SKIP_T_INC_L	# if pixel offset x gets to tile size, dec tile offset
+	# decrement pixel offset by 1
+	la	t0, OFFSET		# load offset address
+	lb	t1, 0(t0)		# load x pixel offset
+	addi	t1, t1, -1		# dec pixel offset x by 1
+	sb	t1, 0(t0)		# store dec'd offset
+	
+	# check pixel offset to see if need tile offset change
+	addi	t2, x0, -T_SIZE		# check against -TILE SIZE for tile offset change
+	bgt	t1, t2, WORLD_UPDATE	# if pixel offset x gets to tile size, dec tile offset
 	
 	# dec tile offset and reset pixel offset
-	addi	s3, s3, -1		# dec tile offset
-	li	t1, UPPER_MASK
-	and	s2, s2, t1		# mask pixel offset to set x offset to 0
-	la	t2, PLAYER		# get player array address
-	lb	t3, 0(t2)		# get player x
-	addi	t3, t3, T_SIZE		# dec player x to 1 tile before to account for offset
-	sb	t3, 0(t2)		# store new x
+	sb	x0, 0(t0)		# store 0 to pixel offset x
+	lb	t3, 1(t0)		# load tile offset
+	addi	t3, t3, -1		# dec tile offset by 1
+	sb	t3, 1(t0)		# store new tile offset x
+	
+	# check if tile offset small enough to shift screen
+	addi	t1, x0, T_MID		# get threshold
+	bgt	t3, t1, WORLD_UPDATE	# check tile offset against threshold
+	
+	# offset small enough, shift tiles back and player forward
+	la	t0, PLAYER		# get player array address
+	lb	t1, 0(t0)		# get player x
+	addi	t1, t1, T_SIZE		# inc player x to 1 tile before to account for offset
+	sb	t1, 0(t0)		# store new x
 	call	DRAW_WORLD		# redraw tiles with new offset
-SKIP_T_INC_L:
 	j	WORLD_UPDATE
 	
 P_MOVE_RIGHT:
@@ -231,22 +261,40 @@ P_MOVE_RIGHT:
 	call	CLEAR_PLAYER
 	call	READ_PLAYER		# read player pixels into memory before drawing
 	
-	addi	s2, s2, 1		# increment pixel offset x by 1
-	li	t1, LOWER_MASK
-	and	t1, s2, t1		# mask to get lower bits of pixel offset
-	addi	t4, x0, T_SIZE
-	blt	t1, t4, SKIP_T_INC_R	# if pixel offset x gets to tile size, inc tile offset
+	# increment pixel offset by 1
+	la	t0, OFFSET		# load offset address
+	lb	t1, 0(t0)		# load x pixel offset
+	addi	t1, t1, 1		# inc pixel offset x by 1
+	sb	t1, 0(t0)		# store dec'd offset
 	
-	# inc tile offset and reset pixel offset
-	addi	s3, s3, 1		# inc tile offset
-	li	t1, UPPER_MASK
-	and	s2, s2, t1		# mask pixel offset to set x offset to 0
-	la	t2, PLAYER		# get player array address
-	lb	t3, 0(t2)		# get player x
-	addi	t3, t3, -T_SIZE		# dec player x to 1 tile before to account for offset
-	sb	t3, 0(t2)		# store new x
+	# check pixel offset to see if need tile offset change
+	addi	t2, x0, T_SIZE		# check against TILE SIZE for tile offset change
+	blt	t1, t2, WORLD_UPDATE	# if pixel offset x gets to tile size, inc tile offset
+	
+	# pixel offset reached tile size
+	sb	x0, 0(t0)		# reset pixel offset x to 0
+	lb	t3, 1(t0)		# load tile offset
+	addi	t3, t3, 1		# inc tile offset by 1
+	sb	t3, 1(t0)		# store new tile offset x
+	
+	# check to see if offset is already at max for tiles in row
+	lb	t3, 1(t0)		# get player tile offset x
+	addi	t1, x0, T_MID		# get offset needed to shift
+	sub	t1, t3, t1		# get difference between player tile offset and threshold - tile offset of first tile shown in row	
+	addi	t2, x0, T_PER_ROW	# get total tiles per row
+	addi	t2, t2, -T_ROW_ON_S	# get greatest offset of first tile in row where last tile in row isn't too far in tiles array
+	bge	t1, t2, WORLD_UPDATE	# if offset of first tile in row is too great, use max offset found above instead
+	
+	# check if tile offset big enough to shift screen
+	addi	t1, x0, T_MID		# get threshold
+	blt	t3, t1, WORLD_UPDATE	# check tile offset against threshold
+	
+	# offset big enough, shift tiles back and player forward
+	la	t0, PLAYER		# get player array address
+	lb	t1, 0(t0)		# get player x
+	addi	t1, t1, -T_SIZE		# dec player x to 1 tile before to account for offset
+	sb	t1, 0(t0)		# store new x
 	call	DRAW_WORLD		# redraw tiles with new offset
-SKIP_T_INC_R:
 	j	WORLD_UPDATE
 	
 P_MOVE_UP:
@@ -283,9 +331,6 @@ P_MOVE_UP:
 	lb	a0, 0(t2)
 	call	CLEAR_PLAYER
 	call	READ_PLAYER		# read player pixels into memory before drawing
-		
-	li	t0, 0x10000
-	sub	s2, s2, t0		# decrement pixel offset y by 1
 	
 	j	WORLD_UPDATE
 	
@@ -327,9 +372,6 @@ P_MOVE_DOWN:
 	lb	a0, 0(t2)
 	call	CLEAR_PLAYER
 	call	READ_PLAYER		# read player pixels into memory before drawing
-	
-	li	t0, 0x10000
-	add	s2, s2, t0		# increment pixel offset y by 1
 	
 	j	WORLD_UPDATE
         
@@ -558,11 +600,17 @@ DRAW_WORLD:
 	addi	sp, sp, -4
 	sw	ra, 0(sp)
 	
+	# get start index for tiles
 	la	t3, TILES		# get tiles array pointer
-	mv	t0, s3			# get player tile offset x
-	li	t1, LOWER_MASK
-	and	t0, t0, t1
+	la	t1, OFFSET		# get tile offset address
+	lb	t0, 1(t1)		# get player tile offset x
+	addi	t2, x0, T_MID		# get offset needed to shift
+	blt	t0, t2, START_DRAW_W	# if offset is too small, don't shift
+	sub	t0, t0, t2		# get difference between tile offset and needed offset
+	addi	t0, t0, 1		# inc to get next tile
 	add	t3, t3, t0		# add tile offset to start index
+	j	START_DRAW_W
+START_DRAW_W:
 	addi	t6, t3, T_PER_ROW	# get start index of next row
 	addi	t4, x0, WIDTH		# get screen end x and y
 	addi	t5, x0, HEIGHT
