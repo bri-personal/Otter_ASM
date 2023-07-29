@@ -60,11 +60,15 @@ PLAYER:	.space	18
 OFFSET: .space 4
 
 # world tiles data:
+# tiles array is array of addresses to fist tile in each row in ALL_TILES
+# size is 4 * TILES_PER_COL
+TILES_ARR:	.space 80
+# all tiles includes type codes for all tiles in world
 # number of bytes = number of tiles, number corresponds to which tile is drawn
 # 0 - empty
 # 1 - wall
 # 2 - red (also empty)
-TILES: .space NUM_TILES
+ALL_TILES: .space NUM_TILES
 
 # executed code
 .text
@@ -84,9 +88,19 @@ MAIN:
         la	t0, OFFSET		# load offset address
         sw	x0, 0(t0)		# fill with 0 for all offsets
         
+        # init tiles array
+        la	t0, ALL_TILES		# get all tiles address
+        la	t1, TILES_ARR		# get tiles array address
+        addi	t2, t0, NUM_TILES	# get first address after end of all tiles
+TILES_ARR_LOOP:
+        sw	t0, 0(t1)		# store address of row in all tiles to entry in tiles array
+        addi	t0, t0, T_PER_ROW	# get first address of next row
+        addi	t1, t1, 4		# get next word index of tiles array
+        blt	t1, t2, TILES_ARR_LOOP	# if new address in all tiles is still within bounds, store addr of next row
+        
         # load world tiles
-        la	t0, TILES		# get tiles array address
-        addi	t2, t0, NUM_TILES	# get end of array
+        la	t0, TILES_ARR		# get tiles array address. t2 is still end of all tiles
+        lw	t0, 0(t0)		# get first address of all tiles from tiles array
 LOAD_T_ROW:
         li	t1, 0x02000200
         sw	t1, 0(t0)
@@ -673,7 +687,8 @@ DRAW_WORLD:
 	sw	ra, 0(sp)
 	
 	# get start index for tiles
-	la	t3, TILES		# get tiles array pointer
+	la	t3, TILES_ARR		# get tiles array pointer
+	lw	t3, 0(t3)		# get first address of all tiles from tiles array
 	
 	# get tile offset to add to pointer
 	la	t1, OFFSET		# get tile offset address
