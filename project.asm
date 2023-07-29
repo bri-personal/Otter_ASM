@@ -1,5 +1,3 @@
-# MOVING RIGHT WORKS, MOVING LEFT DOES NOT
-
 # define addresses and INTR enable
 .eqv	MMIO		0x11000000	# first MMIO address
 .eqv	STACK		0x10000		# stack address
@@ -99,10 +97,10 @@ LOAD_T_ROW:
         li	t1, 0x02000200
         sw	t1, 0(t0)
         addi	t0, t0, 4
-        li	t1, 0x01000000
+        li	t1, 0x02000200
         sw	t1, 0(t0)
         addi	t0, t0, 4
-        li	t1, 0x01000000
+        li	t1, 0x01000200
         sw	t1, 0(t0)
         addi	t0, t0, 4
         blt	t0, t2, LOAD_T_ROW	# check if not at end of array yet
@@ -207,20 +205,26 @@ P_MOVE_LEFT:
 	sb	t1, 0(t0)		# store dec'd offset
 	
 	# check pixel offset to see if need tile offset change
-	addi	t2, x0, -T_SIZE		# check against -TILE SIZE for tile offset change
-	bgt	t1, t2, WORLD_UPDATE	# if pixel offset x gets to tile size, dec tile offset
+	addi	t2, x0, -T_SIZE		# check against negative TILE SIZE for tile offset change
+	bgt	t1, t2, WORLD_UPDATE	# if pixel offset x gets to tile size, inc tile offset
 	
-	# reset pixel offset and temporarily dec tile offset to check if it should decrease
-	sb	x0, 0(t0)		# store 0 to pixel offset x
-	lb	t3, 1(t0)		# load tile offset
+	# pixel offset reached tile size
+	sb	x0, 0(t0)		# reset pixel offset x to 0
+	lb	t3, 1(t0)		# get player tile offset x
 	addi	t3, t3, -1		# dec tile offset by 1
 	sb	t3, 1(t0)		# store new tile offset x
 	
-	# check if tile offset small enough to shift screen
-	addi	t1, x0, T_MID_X		# get threshold
-	bgt	t3, t1, WORLD_UPDATE	# check tile offset against threshold
+	addi	t1, t3, -T_MID_X	# get difference between player tile offset and threshold - potential tile offset of first tile shown in row
 	
-	# offset small enough, shift tiles back and player forward
+	# check if tile offset big enough to shift screen
+	bltz	t1, WORLD_UPDATE	# if diff btw player tile offset x is not at least 0 after decreasing, don't need to redraw
+	
+	# check to see if offset is already at max for tiles in row
+	addi	t2, x0, T_PER_ROW
+	addi	t2, t2, -T_ROW_ON_S	# get greatest offset of first tile in row where last tile in row isn't too far in tiles array
+	bge	t1, t2, WORLD_UPDATE	# if offset of first tile in row is greater than that after decreasing, don't need to redraw
+	
+	# offset big enough, shift tiles back and player forward
 	la	t0, PLAYER		# get player array address
 	lb	t1, 0(t0)		# get player x
 	addi	t1, t1, T_SIZE		# inc player x to 1 tile before to account for offset
@@ -279,20 +283,19 @@ P_MOVE_RIGHT:
 	
 	# pixel offset reached tile size
 	sb	x0, 0(t0)		# reset pixel offset x to 0
-	
-	# check to see if offset is already at max for tiles in row
 	lb	t3, 1(t0)		# get player tile offset x
 	addi	t3, t3, 1		# inc tile offset by 1
-	addi	t1, t3, -T_MID_X	# get difference between player tile offset and threshold - tile offset of first tile shown in row	
-	addi	t2, x0, T_PER_ROW
-	addi	t2, t2, -T_ROW_ON_S	# get greatest offset of first tile in row where last tile in row isn't too far in tiles array
-	bgt	t1, t2, WORLD_UPDATE	# if offset of first tile in row is too great, don't redraw
-	
-	# new tile offset not too great
 	sb	t3, 1(t0)		# store new tile offset x
 	
+	addi	t1, t3, -T_MID_X	# get difference between player tile offset and threshold - potential tile offset of first tile shown in row
+	
 	# check if tile offset big enough to shift screen
-	blez	t1, WORLD_UPDATE	# if diff btw player tile offset x is greater than 0, shift world view
+	blez	t1, WORLD_UPDATE	# if diff btw player tile offset x is not greater than 0 after increasing, don't need to redraw
+	
+	# check to see if offset is already at max for tiles in row
+	addi	t2, x0, T_PER_ROW
+	addi	t2, t2, -T_ROW_ON_S	# get greatest offset of first tile in row where last tile in row isn't too far in tiles array
+	bgt	t1, t2, WORLD_UPDATE	# if offset of first tile in row is greater than that after increasing, don't need to redraw
 	
 	# offset big enough, shift tiles back and player forward
 	la	t0, PLAYER		# get player array address
@@ -607,12 +610,25 @@ DRAW_WORLD:
 	
 	# get start index for tiles
 	la	t3, TILES		# get tiles array pointer
+	
+	# get tile offset to add to pointer
 	la	t1, OFFSET		# get tile offset address
 	lb	t0, 1(t1)		# get player tile offset x
-	addi	t0, t0, -T_MID_X		# get difference between player tile offset and threshold
-	blez	t0, START_DRAW_W	# if diff is too small, don't shift
+	addi	t0, t0, -T_MID_X	# get difference between player tile offset and threshold
+	
+	# check for player offset too low
+	blez	t0, START_DRAW_W	# if diff is less than 0 or 0, pointer offset is 0. start each row such that first tile in row on screen is first tile in row of world
+	
+	# check for player offset too high
+	addi	t1, x0, T_PER_ROW
+	addi	t1, t1, -T_ROW_ON_S	# get diff between total tiles per row and tiles shown per row on screen
+	bge	t0, t1, DW_OFFSET_MAX	# if diff is greater than that^, pointer offset is that^. start each row such that last tile in row on screen is last tile in row of world
+	
+	# player offset in appropriate range, add diff to pointer directly
 	add	t3, t3, t0		# add tile offset to start index
 	j	START_DRAW_W
+DW_OFFSET_MAX:
+	add	t3, t3, t1		# add max allowed offset to pointer, since acutal offset is too big
 START_DRAW_W:
 	addi	t6, t3, T_PER_ROW	# get start index of next row
 	addi	t4, x0, WIDTH		# get screen end x and y
