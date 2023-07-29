@@ -24,7 +24,7 @@
 .eqv	T_ROW_ON_S	16		# number of tiles per row shown on screen
 .eqv	T_COL_ON_S	12		# number of tiles per column shown on screen
 .eqv	NUM_TILES	240		# total number of tiles in world, must be T_PER_ROW * T_PER_COL
-.eqv	T_MID		8		# tile offset to start moving right/left, should be about half of tiles per row shown on screen at once
+.eqv	T_MID		7		# tile offset to start moving right/left, should be about half of tiles per row shown on screen at once
 
 # define colors
 .eqv	BLACK		0
@@ -52,10 +52,10 @@
 PLAYER:	.space	18
 
 # player offset data
-# 0: pixel offset x
-# 1: tile offset x
-# 2: pixel offset y
-# 3: tile offset y
+# 0: pixel offset x - horiz pixel dist from prev tile
+# 1: tile offset x - tile dist from left side of world (even offscreen)
+# 2: pixel offset y - vert pixel dist from prev tile
+# 3: tile offset y - tile dist from top of world (even offscreen)
 OFFSET: .space 4
 
 # world tiles data:
@@ -127,24 +127,26 @@ TITLE_UPDATE:
 	addi	s1, x0, 0		# clear interrupt flag
 	lw	t0, 0x100(s0)		# read keyboard input
 	addi	t1, x0, A_CODE
-	beq	t0, t1, WORLD_START	# check if key pressed was 'A'
+	beq	t0, t1, WORLD_START	# if key pressed was 'A', go to world view
 	j	TITLE_UPDATE
 	
 # page opened after title page
 WORLD_START:
 	# fill background with tiles
-        call	DRAW_WORLD		# fill background
+        call	DRAW_WORLD		# fill background with tiles
         
         call	READ_PLAYER		# read player pixels before drawing player for first time
 WORLD_UPDATE:
+	# show tile offset on sevseg and pixel offset on LEDs (REMOVE LATER)
 	la	t0, OFFSET
 	lb	t1, 0(t0)
 	sb	t1, 0x20(s0)
 	lb	t1, 1(t0)
 	sb	t1, 0x40(s0)
+	
         call	DRAW_PLAYER		# draw player
 WORLD_PAGE:
-	beqz	s1, WORLD_PAGE	# check for interrupt
+	beqz	s1, WORLD_PAGE		# check for interrupt
 	
 	# on interrupt
 	addi	s1, x0, 0		# clear interrupt flag
@@ -164,8 +166,8 @@ P_MOVE_LEFT:
 	la	t2, PLAYER		# get player address
 	
 	# set orientation to left
-	addi	t0, x0, 2		
-	sb	t0, 2(t2)
+	addi	t0, x0, 2
+	sb	t0, 2(t2)		# store orientation in player array
 	
 	# get player x and check if can move left
 	lb	t3, 0(t2)		# load player x
@@ -179,7 +181,7 @@ P_MOVE_LEFT:
 	beq	a3, t0, WORLD_UPDATE	# if player is moving into wall, can't move left
 	
 	# check player foot for wall
-	addi	a1, a1, P_HEIGHT
+	addi	a1, a1, P_HEIGHT	# get y that player bottomleft would be entering
 	addi	a1, a1, -1
 	call	READ_DOT		# get color at that pixel
 	addi	t0, x0, WALL_COLOR
@@ -190,10 +192,10 @@ P_MOVE_LEFT:
 	sb	t3, 0(t2)		# store decremented x
 	
 	# clear pixels where player was
-	addi	a0, t3, 1
-	lb	a1, 1(t2)
-	call	CLEAR_PLAYER
-	call	READ_PLAYER		# read player pixels into memory before drawing
+	addi	a0, t3, 1		# get x where player was before
+	lb	a1, 1(t2)		# get player y
+	call	CLEAR_PLAYER		# clear player at old coords
+	call	READ_PLAYER		# read player pixels at new coords into memory before drawing
 	
 	# decrement pixel offset by 1
 	la	t0, OFFSET		# load offset address
@@ -224,7 +226,7 @@ P_MOVE_LEFT:
 	j	WORLD_UPDATE
 	
 P_MOVE_RIGHT:
-	la	t2, PLAYER
+	la	t2, PLAYER		# store orientation in player array
 	
 	# set orientation to right
 	addi	t0, x0, 3		
@@ -246,7 +248,7 @@ P_MOVE_RIGHT:
 	beq	a3, t0, WORLD_UPDATE	# if player is moving into wall, can't move right
 	
 	# check player foot for wall
-	addi	a1, a1, P_HEIGHT
+	addi	a1, a1, P_HEIGHT	# get y that player bottomright would be entering
 	addi	a1, a1, -1
 	call	READ_DOT		# get color at that pixel
 	addi	t0, x0, WALL_COLOR
@@ -257,10 +259,10 @@ P_MOVE_RIGHT:
 	sb	t3, 0(t2)		# store incremented x
 	
 	# clear pixels where player was
-	addi	a0, t3, -1
-	lb	a1, 1(t2)
-	call	CLEAR_PLAYER
-	call	READ_PLAYER		# read player pixels into memory before drawing
+	addi	a0, t3, -1		# get x where player was before
+	lb	a1, 1(t2)		# get player y
+	call	CLEAR_PLAYER		# clear player at old coords
+	call	READ_PLAYER		# read player pixels at new coords into memory before drawing
 	
 	# increment pixel offset by 1
 	la	t0, OFFSET		# load offset address
@@ -278,18 +280,16 @@ P_MOVE_RIGHT:
 	# check to see if offset is already at max for tiles in row
 	lb	t3, 1(t0)		# get player tile offset x
 	addi	t3, t3, 1		# inc tile offset by 1
-	addi	t1, x0, T_MID		# get offset needed to shift
-	sub	t1, t3, t1		# get difference between player tile offset and threshold - tile offset of first tile shown in row	
+	addi	t1, t3, -T_MID		# get difference between player tile offset and threshold - tile offset of first tile shown in row	
 	addi	t2, x0, T_PER_ROW	# get total tiles per row
 	addi	t2, t2, -T_ROW_ON_S	# get greatest offset of first tile in row where last tile in row isn't too far in tiles array
-	bge	t1, t2, WORLD_UPDATE	# if offset of first tile in row is too great, don't redraw
+	bgt	t1, t2, WORLD_UPDATE	# if offset of first tile in row is too great, don't redraw
 	
 	# new tile offset not too great
 	sb	t3, 1(t0)		# store new tile offset x
 	
 	# check if tile offset big enough to shift screen
-	addi	t1, x0, T_MID		# get threshold
-	blt	t3, t1, WORLD_UPDATE	# check tile offset against threshold
+	blez	t1, WORLD_UPDATE	# if diff btw player tile offset x is greater than 0, shift world view
 	
 	# offset big enough, shift tiles back and player forward
 	la	t0, PLAYER		# get player array address
@@ -300,8 +300,8 @@ P_MOVE_RIGHT:
 	j	WORLD_UPDATE
 	
 P_MOVE_UP:
-	la	t2, PLAYER
-	
+	la	t2, PLAYER		# store orientation in player array
+		
 	# set orientation to up
 	addi	t0, x0, 1		
 	sb	t0, 2(t2)
@@ -337,7 +337,7 @@ P_MOVE_UP:
 	j	WORLD_UPDATE
 	
 P_MOVE_DOWN:
-	la	t2, PLAYER
+	la	t2, PLAYER		# store orientation in player array
 	
 	# set orientation to down
 	addi	t0, x0, 0		
@@ -606,10 +606,8 @@ DRAW_WORLD:
 	la	t3, TILES		# get tiles array pointer
 	la	t1, OFFSET		# get tile offset address
 	lb	t0, 1(t1)		# get player tile offset x
-	addi	t2, x0, T_MID		# get offset needed to shift
-	blt	t0, t2, START_DRAW_W	# if offset is too small, don't shift
-	sub	t0, t0, t2		# get difference between tile offset and needed offset
-	addi	t0, t0, 1		# inc to get next tile
+	addi	t0, t0, -T_MID		# get difference between player tile offset and threshold
+	blez	t0, START_DRAW_W	# if diff is too small, don't shift
 	add	t3, t3, t0		# add tile offset to start index
 	j	START_DRAW_W
 START_DRAW_W:
