@@ -266,7 +266,7 @@ P_MOVE_RIGHT:
 	la	t0, OFFSET		# load offset address
 	lb	t1, 0(t0)		# load x pixel offset
 	addi	t1, t1, 1		# inc pixel offset x by 1
-	sb	t1, 0(t0)		# store dec'd offset
+	sb	t1, 0(t0)		# store inc'd offset
 	
 	# check pixel offset to see if need tile offset change
 	addi	t2, x0, T_SIZE		# check against TILE SIZE for tile offset change
@@ -274,17 +274,18 @@ P_MOVE_RIGHT:
 	
 	# pixel offset reached tile size
 	sb	x0, 0(t0)		# reset pixel offset x to 0
-	lb	t3, 1(t0)		# load tile offset
-	addi	t3, t3, 1		# inc tile offset by 1
-	sb	t3, 1(t0)		# store new tile offset x
 	
 	# check to see if offset is already at max for tiles in row
 	lb	t3, 1(t0)		# get player tile offset x
+	addi	t3, t3, 1		# inc tile offset by 1
 	addi	t1, x0, T_MID		# get offset needed to shift
 	sub	t1, t3, t1		# get difference between player tile offset and threshold - tile offset of first tile shown in row	
 	addi	t2, x0, T_PER_ROW	# get total tiles per row
 	addi	t2, t2, -T_ROW_ON_S	# get greatest offset of first tile in row where last tile in row isn't too far in tiles array
-	bge	t1, t2, WORLD_UPDATE	# if offset of first tile in row is too great, use max offset found above instead
+	bge	t1, t2, WORLD_UPDATE	# if offset of first tile in row is too great, don't redraw
+	
+	# new tile offset not too great
+	sb	t3, 1(t0)		# store new tile offset x
 	
 	# check if tile offset big enough to shift screen
 	addi	t1, x0, T_MID		# get threshold
