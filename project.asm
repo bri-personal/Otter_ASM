@@ -18,10 +18,10 @@
 
 # world dimensions
 .eqv	T_PER_ROW	20		# number of tiles per row, 16 fills exactly with 5x5
-.eqv	T_PER_COL	12		# number of tiles per column, 12 fills exactly with 5x5
-.eqv	T_ROW_ON_S	16		# number of tiles per row shown on screen
-.eqv	T_COL_ON_S	12		# number of tiles per column shown on screen
-.eqv	NUM_TILES	240		# total number of tiles in world, must be T_PER_ROW * T_PER_COL
+.eqv	T_PER_COL	20		# number of tiles per column, 12 fills exactly with 5x5
+.eqv	T_ROW_ON_S	16		# number of tiles per row shown on screen, 16 fills exactly with 5x5
+.eqv	T_COL_ON_S	12		# number of tiles per column shown on screen, 12 fills exactly with 5x5
+.eqv	NUM_TILES	400		# total number of tiles in world, must be T_PER_ROW * T_PER_COL
 .eqv	T_MID_X		7		# tile offset to start moving screen view right/left, should be about half of tiles per row-1 shown on screen at once
 .eqv	T_MID_Y		5		# tile offset to start moving screen view up/down, should be about half of tiles per col-1 shown on screen at once
 
@@ -140,9 +140,9 @@ WORLD_START:
 WORLD_UPDATE:
 	# show tile offset on sevseg and pixel offset on LEDs (REMOVE LATER)
 	la	t0, OFFSET
-	lb	t1, 0(t0)
+	lb	t1, 2(t0)
 	sb	t1, 0x20(s0)
-	lb	t1, 1(t0)
+	lb	t1, 3(t0)
 	sb	t1, 0x40(s0)
 	
         call	DRAW_PLAYER		# draw player
@@ -206,7 +206,7 @@ P_MOVE_LEFT:
 	
 	# check pixel offset to see if need tile offset change
 	addi	t2, x0, -T_SIZE		# check against negative TILE SIZE for tile offset change
-	bgt	t1, t2, WORLD_UPDATE	# if pixel offset x gets to tile size, inc tile offset
+	bgt	t1, t2, WORLD_UPDATE	# if pixel offset x gets to tile size, dec tile offset
 	
 	# pixel offset reached tile size
 	sb	x0, 0(t0)		# reset pixel offset x to 0
@@ -224,7 +224,7 @@ P_MOVE_LEFT:
 	addi	t2, t2, -T_ROW_ON_S	# get greatest offset of first tile in row where last tile in row isn't too far in tiles array
 	bge	t1, t2, WORLD_UPDATE	# if offset of first tile in row is greater than that after decreasing, don't need to redraw
 	
-	# offset big enough, shift tiles back and player forward
+	# offset big enough, shift tiles and player forward
 	la	t0, PLAYER		# get player array address
 	lb	t1, 0(t0)		# get player x
 	addi	t1, t1, T_SIZE		# inc player x to 1 tile before to account for offset
@@ -297,7 +297,7 @@ P_MOVE_RIGHT:
 	addi	t2, t2, -T_ROW_ON_S	# get greatest offset of first tile in row where last tile in row isn't too far in tiles array
 	bgt	t1, t2, WORLD_UPDATE	# if offset of first tile in row is greater than that after increasing, don't need to redraw
 	
-	# offset big enough, shift tiles back and player forward
+	# offset big enough, shift tiles and player back
 	la	t0, PLAYER		# get player array address
 	lb	t1, 0(t0)		# get player x
 	addi	t1, t1, -T_SIZE		# dec player x to 1 tile before to account for offset
@@ -340,6 +340,38 @@ P_MOVE_UP:
 	call	CLEAR_PLAYER
 	call	READ_PLAYER		# read player pixels into memory before drawing
 	
+	# decrement pixel offset by 1
+	la	t0, OFFSET		# load offset address
+	lb	t1, 2(t0)		# load y pixel offset
+	addi	t1, t1, -1		# dec pixel offset y by 1
+	sb	t1, 2(t0)		# store dec'd offset
+	
+	# check pixel offset to see if need tile offset change
+	addi	t2, x0, -T_SIZE		# check against negative TILE SIZE for tile offset change
+	bgt	t1, t2, WORLD_UPDATE	# if pixel offset y gets to tile size, dec tile offset
+	
+	# pixel offset reached tile size
+	sb	x0, 2(t0)		# reset pixel offset y to 0
+	lb	t3, 3(t0)		# get player tile offset y
+	addi	t3, t3, -1		# dec tile offset by 1
+	sb	t3, 3(t0)		# store new tile offset y
+	
+	addi	t1, t3, -T_MID_Y	# get difference between player tile offset and threshold - potential tile offset of first tile shown in col
+	
+	# check if tile offset big enough to shift screen
+	bltz	t1, WORLD_UPDATE	# if diff btw player tile offset y is not at least 0 after decreasing, don't need to redraw
+	
+	# check to see if offset is already at max for tiles in row
+	addi	t2, x0, T_PER_COL
+	addi	t2, t2, -T_COL_ON_S	# get greatest offset of first tile in col where last tile in col isn't too far in tiles array
+	bge	t1, t2, WORLD_UPDATE	# if offset of first tile in col is greater than that after decreasing, don't need to redraw
+	
+	# offset big enough, shift tiles and player down
+	la	t0, PLAYER		# get player array address
+	lb	t1, 1(t0)		# get player y
+	addi	t1, t1, T_SIZE		# inc player y to 1 tile before to account for offset
+	sb	t1, 1(t0)		# store new y
+	call	DRAW_WORLD		# redraw tiles with new offset
 	j	WORLD_UPDATE
 	
 P_MOVE_DOWN:
@@ -381,6 +413,38 @@ P_MOVE_DOWN:
 	call	CLEAR_PLAYER
 	call	READ_PLAYER		# read player pixels into memory before drawing
 	
+	# increment pixel offset by 1
+	la	t0, OFFSET		# load offset address
+	lb	t1, 2(t0)		# load y pixel offset
+	addi	t1, t1, 1		# inc pixel offset y by 1
+	sb	t1, 2(t0)		# store inc'd offset
+	
+	# check pixel offset to see if need tile offset change
+	addi	t2, x0, T_SIZE		# check against TILE SIZE for tile offset change
+	blt	t1, t2, WORLD_UPDATE	# if pixel offset y gets to tile size, inc tile offset
+	
+	# pixel offset reached tile size
+	sb	x0, 2(t0)		# reset pixel offset y to 0
+	lb	t3, 3(t0)		# get player tile offset y
+	addi	t3, t3, 1		# inc tile offset by 1
+	sb	t3, 3(t0)		# store new tile offset y
+	
+	addi	t1, t3, -T_MID_Y	# get difference between player tile offset and threshold - potential tile offset of first tile shown in col
+	
+	# check if tile offset big enough to shift screen
+	blez	t1, WORLD_UPDATE	# if diff btw player tile offset y is not greater than 0 after increasing, don't need to redraw
+	
+	# check to see if offset is already at max for tiles in col
+	addi	t2, x0, T_PER_COL
+	addi	t2, t2, -T_COL_ON_S	# get greatest offset of first tile in col where last tile in col isn't too far in tiles array
+	bgt	t1, t2, WORLD_UPDATE	# if offset of first tile in col is greater than that after increasing, don't need to redraw
+	
+	# offset big enough, shift tiles and player up
+	la	t0, PLAYER		# get player array address
+	lb	t1, 1(t0)		# get player y
+	addi	t1, t1, -T_SIZE		# dec player y to 1 tile before to account for offset
+	sb	t1, 1(t0)		# store new y
+	call	DRAW_WORLD		# redraw tiles with new offset
 	j	WORLD_UPDATE
         
 # interrupt service routine
