@@ -62,6 +62,7 @@ OFFSET: .space 4
 # number of bytes = number of tiles, number corresponds to which tile is drawn
 # 0 - empty
 # 1 - wall
+# 2 - red (also empty)
 TILES: .space NUM_TILES
 
 # executed code
@@ -86,13 +87,13 @@ MAIN:
         la	t0, TILES		# get tiles array address
         addi	t2, t0, NUM_TILES	# get end of array
 LOAD_T_ROW:
-        li	t1, 0x00000000
+        li	t1, 0x02000200
         sw	t1, 0(t0)
         addi	t0, t0, 4
-        li	t1, 0x00000000
+        li	t1, 0x02000200
         sw	t1, 0(t0)
         addi	t0, t0, 4
-        li	t1, 0x00000000
+        li	t1, 0x02000200
         sw	t1, 0(t0)
         addi	t0, t0, 4
         li	t1, 0x01000000
@@ -623,12 +624,18 @@ LOAD_W_LOOP:
 	addi	a4, a4, -1
 	lb	t0, 0(t3)		# get tile byte
 	addi	t3, t3, 1		# go to next byte
-	bnez	t0, WALL_TILE		# draw tile using code from t5
+	addi	t2, x0, 1
+	beq	t0, t2, WALL_TILE	# draw tile using code from t0
+	addi	t2, t2, 1
+	beq	t0, t2, RED_TILE
 EMPTY_TILE:
 	addi	a3, x0, GREEN		# tile=0, blank background
 	j	DRAW_TILE
 WALL_TILE:
 	addi	a3, x0, WALL_COLOR	# tile=1, wall tile
+	j	DRAW_TILE
+RED_TILE:
+	addi	a3, x0, RED		# tile=2, red (also empty)
 	j	DRAW_TILE
 DRAW_TILE:
 	call	DRAW_RECT		# draw tile
