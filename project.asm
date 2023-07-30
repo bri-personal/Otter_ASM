@@ -17,11 +17,11 @@
 .eqv	T_SIZE		5		# width and height of square tiles
 
 # world dimensions
-.eqv	T_PER_ROW	20		# number of tiles per row, 16 fills exactly with 5x5
-.eqv	T_PER_COL	20		# number of tiles per column, 12 fills exactly with 5x5
+.eqv	T_PER_ROW	24		# number of tiles per row, max 256. 16 fills exactly with 5x5
+.eqv	T_PER_COL	24		# number of tiles per column, max 256. 12 fills exactly with 5x5
 .eqv	T_ROW_ON_S	16		# number of tiles per row shown on screen, 16 fills exactly with 5x5
 .eqv	T_COL_ON_S	12		# number of tiles per column shown on screen, 12 fills exactly with 5x5
-.eqv	NUM_TILES	400		# total number of tiles in world, must be T_PER_ROW * T_PER_COL
+.eqv	NUM_TILES	576		# total number of tiles in world, must be T_PER_ROW * T_PER_COL. max 65536 (256*256)
 .eqv	T_MID_X		7		# tile offset to start moving screen view right/left, should be about half of tiles per row-1 shown on screen at once
 .eqv	T_MID_Y		5		# tile offset to start moving screen view up/down, should be about half of tiles per col-1 shown on screen at once
 
@@ -81,12 +81,14 @@ MAIN:
         # initialize player position
         la	t0, PLAYER		# load address of player pos
         sb	x0, 0(t0)		# x pos
-        sb	x0, 1(t0)		# y pos
+        addi	t1, x0, 25		# temporary start y for maze - REMOVE LATER
+        sb	t1, 1(t0)		# y pos
         sb	x0, 2(t0)		# orientation, down to start
         
         # initialize offsets
         la	t0, OFFSET		# load offset address
-        sw	x0, 0(t0)		# fill with 0 for all offsets
+        li	t1, 0x0B000000		# temporary start tile offset y for maze - REMOVE LATER
+        sw	t1, 0(t0)		# fill with 0 for all offsets
         
         # init tiles array
         la	t0, ALL_TILES		# get all tiles address
@@ -101,38 +103,464 @@ TILES_ARR_LOOP:
         # load world tiles
         la	t0, TILES_ARR		# get tiles array address. t2 is still end of all tiles
         lw	t0, 0(t0)		# get first address of all tiles from tiles array
+        
+        #  rows of maze - REMOVE LATER
 LOAD_T_ROW:
-        li	t1, 0x02000200
+	# row 1
+        li	t1, 0x01010101
         sw	t1, 0(t0)
         addi	t0, t0, 4
-        li	t1, 0x02000200
+        li	t1, 0x01010101
         sw	t1, 0(t0)
         addi	t0, t0, 4
-        li	t1, 0x02000200
+        li	t1, 0x01010101
         sw	t1, 0(t0)
         addi	t0, t0, 4
-        li	t1, 0x02000200
+        li	t1, 0x01010101
         sw	t1, 0(t0)
         addi	t0, t0, 4
-        li	t1, 0x01000200
+        li	t1, 0x01010101
         sw	t1, 0(t0)
         addi	t0, t0, 4
-        li	t1, 0x00020002
+        li	t1, 0x01010101
         sw	t1, 0(t0)
         addi	t0, t0, 4
-        li	t1, 0x00020002
+        li	t1, 0x01010101
         sw	t1, 0(t0)
         addi	t0, t0, 4
-        li	t1, 0x00020002
+        li	t1, 0x01010101
         sw	t1, 0(t0)
         addi	t0, t0, 4
-        li	t1, 0x00020002
+        li	t1, 0x01010101
         sw	t1, 0(t0)
         addi	t0, t0, 4
-        li	t1, 0x01020002
+        li	t1, 0x01010101
         sw	t1, 0(t0)
         addi	t0, t0, 4
-        blt	t0, t2, LOAD_T_ROW	# check if not at end of array yet
+        li	t1, 0x01010101
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x01010101
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        
+        # row 2
+        li	t1, 0x00000101
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x00000000
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x01010000
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x00000000
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x00000000
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x01010000
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x00000101
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x00000000
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x01010000
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x00000000
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x00000000
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x01010000
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        
+        # row 3
+        li	t1, 0x00000101
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x01010101
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x01010000
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x01010000
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x01010101
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x01010101
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x00000101
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x01010101
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x01010000
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x01010000
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x01010101
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x01010101
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        
+        # row 4
+        li	t1, 0x00000101
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x01010000
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x01010000
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x01010000
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x00000000
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x01010000
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x00000101
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x01010000
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x01010000
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x01010000
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x00000000
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x01010000
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        
+        # row 5
+        li	t1, 0x01010101
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x01010000
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x01010000
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x01010000
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x01010000
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x01010000
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x01010101
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x01010000
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x01010000
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x01010000
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x01010000
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x01010000
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        
+        # row 6
+        li	t1, 0x00000202
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x01010000
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x01010000
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x00000000
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x01010000
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x01010000
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x00000202
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x01010000
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x01010000
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x00000000
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x01010000
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x01010000
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        
+        # row 7
+        li	t1, 0x01010101
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x01010101
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x01010000
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x01010101
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x01010000
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x01010000
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x01010101
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x01010101
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x01010000
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x01010101
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x01010000
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x01010000
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        
+        # row 8
+        li	t1, 0x00000101
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x00000000
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x01010000
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x00000000
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x01010000
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x01010000
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x00000101
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x00000000
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x01010000
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x00000000
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x01010000
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x01010000
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        
+        # row 9
+        li	t1, 0x00000101
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x01010101
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x01010101
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x01010000
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x01010101
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x01010000
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x00000101
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x01010101
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x01010101
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x01010000
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x01010101
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x01010000
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        
+        # row 10
+        li	t1, 0x00000101
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x01010101
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x01010101
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x01010000
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x00000000
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x01010000
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x00000101
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x01010101
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x01010101
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x01010000
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x00000000
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x01010000
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        
+        # row 11
+        li	t1, 0x00000101
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x00000000
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x00000000
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x01010000
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x01010000
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x01010000
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x00000101
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x00000000
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x00000000
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x01010000
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x01010000
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x01010000
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        
+        # row 12
+        li	t1, 0x01010101
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x01010101
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x01010101
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x01010101
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x01010202
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x01010101
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x01010101
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x01010101
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x01010101
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x01010101
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x01010202
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
+        li	t1, 0x01010101
+        sw	t1, 0(t0)
+        addi	t0, t0, 4
         
         # setup ISR address
         la	t0, ISR
@@ -167,13 +595,6 @@ WORLD_START:
         
         call	READ_PLAYER		# read player pixels before drawing player for first time
 WORLD_UPDATE:
-	# show tile offset on sevseg and pixel offset on LEDs (REMOVE LATER)
-	la	t0, OFFSET
-	lb	t1, 2(t0)
-	sb	t1, 0x20(s0)
-	lb	t1, 3(t0)
-	sb	t1, 0x40(s0)
-	
         call	DRAW_PLAYER		# draw player
 WORLD_PAGE:
 	beqz	s1, WORLD_PAGE		# check for interrupt
