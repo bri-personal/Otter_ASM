@@ -25,6 +25,9 @@
 .eqv	T_MID_X		7		# tile offset to start moving screen view right/left, should be about half of tiles per row-1 shown on screen at once
 .eqv	T_MID_Y		5		# tile offset to start moving screen view up/down, should be about half of tiles per col-1 shown on screen at once
 
+# letter dimensions
+.eqv	L_SIZE	5		# width and height of letters
+
 # define colors
 .eqv	BLACK		0
 .eqv	WHITE		0xFF
@@ -36,10 +39,11 @@
 .eqv	WALL_COLOR	D_GREEN
 
 # define key codes
-.eqv	A_CODE	0x1C
-.eqv	D_CODE	0x23
-.eqv	S_CODE	0x1B
-.eqv	W_CODE	0x1D
+.eqv	A_CODE		0x1C
+.eqv	D_CODE		0x23
+.eqv	S_CODE		0x1B
+.eqv	W_CODE		0x1D
+.eqv	SPACE_CODE	0x29
 
 # predefined arrays in data segment
 .data
@@ -121,8 +125,8 @@ TITLE_START:
         call	DRAW_BG			# fill background
         
         # draw title text
-        addi	a0, x0, 5
-        addi	a1, x0, 5
+        addi	a0, x0, L_SIZE
+        addi	a1, x0, L_SIZE
         addi	a3, x0, WHITE
         addi	a2, x0, 'A'
         call	DRAW_LETTER
@@ -164,6 +168,8 @@ WORLD_PAGE:
 	beq	t0, t1, P_MOVE_UP	# check if 'W' was pressed
 	addi	t1, x0, S_CODE
 	beq	t0, t1, P_MOVE_DOWN	# check if 'S' was pressed
+	addi	t1, x0, SPACE_CODE
+	beq	t0, t1, MENU_START	# go to menu page if space pressed
 	j	WORLD_PAGE
 P_MOVE_LEFT:
 	la	t2, PLAYER		# get player address
@@ -448,6 +454,33 @@ P_MOVE_DOWN:
 	sb	t1, 1(t0)		# store new y
 	call	DRAW_WORLD		# redraw tiles with new offset
 	j	WORLD_UPDATE
+	
+# menu screen opened from world screen
+MENU_START:
+	# fill background with red
+	addi	a3, x0, RED
+	call	DRAW_BG
+	addi	a0, x0, L_SIZE
+	addi	a1, x0, L_SIZE
+	addi	a3, x0, WHITE
+	addi	a2, x0, 'M'
+	call	DRAW_LETTER
+	addi	a2, x0, 'E'
+	call	DRAW_LETTER
+	addi	a2, x0, 'N'
+	call	DRAW_LETTER
+	addi	a2, x0, 'U'
+	call	DRAW_LETTER
+MENU_UPDATE:
+	beqz	s1, MENU_UPDATE		# check for interrupt
+	
+	 # on interrupt
+	addi	s1, x0, 0		# clear interrupt flag
+	
+	lw	t0, 0x100(s0)		# read keyboard input
+	addi	t1, x0, SPACE_CODE
+	beq	t0, t1, WORLD_START	# if key pressed was 'A', go to world view
+	j	MENU_UPDATE
         
 # interrupt service routine
 ISR:
@@ -842,7 +875,8 @@ DL_UNKNOWN:
 	
 DL_END:
 	# restore original coords to arg registers
-	addi	a0, t2, 6
+	addi	a0, t2, L_SIZE
+	addi	a0, a0, 1
 	mv	a1, t3
 	
 	lw	ra, 0(sp)
