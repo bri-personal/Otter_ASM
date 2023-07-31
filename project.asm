@@ -585,6 +585,9 @@ TITLE_START:
         addi	a3, x0, WHITE
         addi	a2, x0, 'A'
         call	DRAW_LETTER
+        addi	a0, a0, 6
+        addi	a2, x0, 'E'
+        call	DRAW_LETTER
 TITLE_UPDATE:
 	beqz	s1, TITLE_UPDATE	# check for interrupt
 	
@@ -1215,7 +1218,7 @@ DRAW_TILE:
 	addi	sp, sp, 4
 	ret
 	
-# draw letter given by ascii in a2 with topleft at (a0, a1) with color in a3
+# draw 5x5 letter given by ascii in a2 with topleft at (a0, a1) with color in a3
 # modifies t0, t1, t2, t3, a0, a1, a2
 DRAW_LETTER:
 	addi	sp, sp, -4
@@ -1228,6 +1231,8 @@ DRAW_LETTER:
 	# check which letter it is
 	addi	t0, x0, 'A'
 	beq	a2, t0, DL_A		# ascii 'A'
+	addi	t0, x0, 'E'
+	beq 	a2, t0, DL_E		# ascii 'E'
 	j	DL_END
 DL_A:
 	# draw 5x5 A
@@ -1251,7 +1256,32 @@ DL_A:
 	call	DRAW_HORIZ_LINE
 	j	DL_END
 	
+DL_E:
+	# draw 5x5 E
+	addi	a2, a1, 4
+	call	DRAW_VERT_LINE
+	
+	addi	a0, t2, 1
+	mv	a1, t3
+	addi	a2, a0, 3
+	call	DRAW_HORIZ_LINE
+	
+	addi	a0, t2, 1
+	addi	a1, t3, 2
+	addi	a2, a0, 2
+	call	DRAW_HORIZ_LINE
+	
+	addi	a0, t2, 1
+	addi	a1, t3, 4
+	addi	a2, a0, 3
+	call	DRAW_HORIZ_LINE
+	j	DL_END
+	
 DL_END:
+	# restore original coords to arg registers
+	mv	a0, t2
+	mv	a1, t3
+	
 	lw	ra, 0(sp)
 	addi	sp, sp, 4
 	ret
