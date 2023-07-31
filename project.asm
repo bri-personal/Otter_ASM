@@ -578,6 +578,13 @@ TITLE_START:
 	# fill background with dark green
         addi	a3, x0, D_GREEN		# set color
         call	DRAW_BG			# fill background
+        
+        # draw title text
+        addi	a0, x0, 5
+        addi	a1, x0, 5
+        addi	a3, x0, WHITE
+        addi	a2, x0, 'A'
+        call	DRAW_LETTER
 TITLE_UPDATE:
 	beqz	s1, TITLE_UPDATE	# check for interrupt
 	
@@ -1089,7 +1096,6 @@ P_READ_LOOP:
 	addi	sp, sp, 4
 	ret
 	
-	
 # clear player and replace with previous background colors
 # modifies t0, t1, t2, t3, t4, a0, a1, a3
 # a0 and a1 must start as player topleft coords
@@ -1205,6 +1211,47 @@ DRAW_TILE:
 	blt	a1, t5, LOAD_W_LOOP	# check if all tiles have been drawn
 
 	# all tiles drawn - done	
+	lw	ra, 0(sp)
+	addi	sp, sp, 4
+	ret
+	
+# draw letter given by ascii in a2 with topleft at (a0, a1) with color in a3
+# modifies t0, t1, t2, t3, a0, a1, a2
+DRAW_LETTER:
+	addi	sp, sp, -4
+	sw	ra, 0(sp)
+	
+	# save coords to draw lines
+	addi	t2, a0, 0 		# x coord
+	addi	t3, a1, 0		# y coord
+	
+	# check which letter it is
+	addi	t0, x0, 'A'
+	beq	a2, t0, DL_A		# ascii 'A'
+	j	DL_END
+DL_A:
+	# draw 5x5 A
+	addi	a0, a0, 1
+	addi	a2, a0, 2
+	call	DRAW_HORIZ_LINE
+	
+	mv	a0, t2
+	addi	a1, t3, 1
+	addi	a2, a1, 3
+	call	DRAW_VERT_LINE
+	
+	addi	a0, a0, 4
+	addi	a1, t3, 1
+	addi	a2, a1, 3
+	call DRAW_VERT_LINE
+	
+	addi	a0, t2, 1
+	addi	a1, t3, 2
+	addi	a2, a0, 2
+	call	DRAW_HORIZ_LINE
+	j	DL_END
+	
+DL_END:
 	lw	ra, 0(sp)
 	addi	sp, sp, 4
 	ret
