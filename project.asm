@@ -126,8 +126,9 @@ TITLE_START:
         addi	a3, x0, WHITE
         addi	a2, x0, 'A'
         call	DRAW_LETTER
-        addi	a0, a0, 6
         addi	a2, x0, 'E'
+        call	DRAW_LETTER
+        addi	a2, x0, 'I'
         call	DRAW_LETTER
 TITLE_UPDATE:
 	beqz	s1, TITLE_UPDATE	# check for interrupt
@@ -774,7 +775,7 @@ DRAW_LETTER:
 	beq	a2, t0, DL_A		# ascii 'A'
 	addi	t0, x0, 'E'
 	beq 	a2, t0, DL_E		# ascii 'E'
-	j	DL_END
+	j	DL_UNKNOWN		# unimplemented ascii
 DL_A:
 	# draw 5x5 A
 	addi	a0, a0, 1
@@ -818,9 +819,30 @@ DL_E:
 	call	DRAW_HORIZ_LINE
 	j	DL_END
 	
+DL_UNKNOWN:
+	# draw 5x5 square
+	addi	a2, a1, 4
+	call	DRAW_VERT_LINE
+	
+	addi	a0, t2, 1
+	mv	a1, t3
+	addi	a2, a0, 3
+	call	DRAW_HORIZ_LINE
+	
+	addi	a0, t2, 4
+	addi	a1, t3, 1
+	addi	a2, a1, 3
+	call	DRAW_VERT_LINE
+	
+	addi	a0, t2, 1
+	addi	a1, t3, 4
+	addi	a2, a0, 2
+	call	DRAW_HORIZ_LINE
+	j	DL_END
+	
 DL_END:
 	# restore original coords to arg registers
-	mv	a0, t2
+	addi	a0, t2, 6
 	mv	a1, t3
 	
 	lw	ra, 0(sp)
