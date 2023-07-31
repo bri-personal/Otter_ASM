@@ -28,6 +28,11 @@
 # letter dimensions
 .eqv	L_SIZE	5		# width and height of letters
 
+# menu quantities - NEED TO USE THESE IN MENU CODE
+.eqv	MENU_SQ_SIZE	10	# width and height of squares on menu page
+.eqv	MENU_BTW_SIZE	15	# dist from topleft of menu square to topleft of next to right or down
+.eqv	MENU_NUM_SQ	8	# number of squares in menu
+
 # define colors
 .eqv	BLACK		0
 .eqv	WHITE		0xFF
@@ -44,6 +49,7 @@
 .eqv	S_CODE		0x1B
 .eqv	W_CODE		0x1D
 .eqv	SPACE_CODE	0x29
+
 
 # predefined arrays in data segment
 .data
@@ -74,6 +80,10 @@ TILES_ARR:	.space 80
 # 2 - red (also empty)
 ALL_TILES: .space NUM_TILES
 
+# menu selection index
+MENU_I:	.space 1
+
+
 # executed code
 .text
 MAIN:
@@ -93,6 +103,10 @@ MAIN:
         la	t0, OFFSET		# load offset address
         li	t1, 0x0B000000		# temporary start tile offset y for maze - REMOVE LATER
         sw	t1, 0(t0)		# fill with 0 for all offsets
+        
+        # initialize menu index
+        la	t0, MENU_I		# load menu index address
+        sb	x0, 0(t0)		# store 0 to index
         
         # init tiles array
         la	t0, ALL_TILES		# get all tiles address
@@ -460,6 +474,8 @@ MENU_START:
 	# fill background with red
 	addi	a3, x0, RED
 	call	DRAW_BG
+	
+	# draw menu title text
 	addi	a0, x0, L_SIZE
 	addi	a1, x0, L_SIZE
 	addi	a3, x0, WHITE
@@ -471,17 +487,128 @@ MENU_START:
 	call	DRAW_LETTER
 	addi	a2, x0, 'U'
 	call	DRAW_LETTER
-MENU_UPDATE:
-	beqz	s1, MENU_UPDATE		# check for interrupt
 	
-	 # on interrupt
+	# draw menu squares
+	addi	t3, x0, 10		# save initial coords x - REMOVE MAGIC NUMBER LATER
+	addi	t4, x0, 20		# save initial coords y - REMOVE MAGIC NUMBER LATER
+	addi	a3, x0, WHITE		# set color
+MENU_DRAW_LOOP:
+	# set coords for drawing rectangle
+	mv	a0, t3
+	mv	a1, t4
+	addi	a2, a0, 10
+	addi	a4, a1, 10
+	
+	call	DRAW_RECT		# draw rectangle
+	
+	addi	t3, t3, 15		# inc x to next rect
+	addi	t0, x0, WIDTH
+	addi	t0, t0, -10
+	blt	t3, t0, MENU_DRAW_LOOP	# if x not too far right, draw next rect
+	
+	# x too far right
+	addi	t3, x0, 10		# reset x
+	addi	t4, t4, 15		# inc y to next row
+	addi	t0, x0, HEIGHT
+	addi	t0, t0, -10
+	blt	t4, t0, MENU_DRAW_LOOP	# if y not too far down, draw next rect. otherwise end loop
+	
+MENU_UPDATE:
+	la	t0, MENU_I		# get address of menu index
+	lb	t5, 0(t0)		# get current menu index
+	addi	a0, x0, 10		# set initial coords x to find rect to mark - REMOVE MAGIC NUMBER LATER
+	addi	a1, x0, 20		# set initial coords y to find rect to mark - REMOVE MAGIC NUMBER LATER
+M_I_LOOP:
+	beqz	t5, END_M_I_LOOP	# if counter reached 0, found correct rectangle
+	
+	# counter not 0
+	addi	t5, t5, -1		# dec counter
+	
+	# if counter now 0, current rect needs to be cleared
+	bnez	t5, M_I_CONT
+	
+	# save x and y coords
+	mv	t3, a0
+	mv	t4, a1
+	
+	# draw white over rect before selection
+	addi	a2, a0, 10
+	addi	a4, a1, 10
+	addi	a3, x0, WHITE
+	call	DRAW_RECT
+	
+	# restore x and y coords
+	mv	a0, t3
+	mv	a1, t4
+	
+M_I_CONT:
+	addi	a0, a0, 15		# inc x to next rect
+	addi	t0, x0, WIDTH
+	addi	t0, t0, -10
+	blt	a0, t0, M_I_LOOP	# if x not too far right, check counter again
+	
+	# x too far right
+	addi	a0, x0, 10		# reset x
+	addi	a1, a1, 15		# inc y to next row
+	j	M_I_LOOP		# check counter again
+	
+END_M_I_LOOP:
+	addi	a2, a0, 10		# set coords of other corner of rect
+	addi	a4, a1, 10
+	addi	a3, x0, BLUE		# set selection color
+	call	DRAW_RECT		# draw over selected rect
+	
+MENU_PAGE:
+	beqz	s1, MENU_PAGE		# check for interrupt
+	
+	# on interrupt
 	addi	s1, x0, 0		# clear interrupt flag
 	
 	lw	t0, 0x100(s0)		# read keyboard input
+	addi	t1, x0, A_CODE
+	beq	t0, t1, M_MOVE_LEFT	# if key pressed was 'A', move selection left
+	addi	t1, x0, D_CODE
+	beq	t0, t1, M_MOVE_RIGHT	# if key pressed was 'D', move selection right
+	addi	t1, x0, W_CODE
+	beq	t0, t1, M_MOVE_UP	# if key pressed was 'W', move selection up
+	addi	t1, x0, S_CODE
+	beq	t0, t1, M_MOVE_DOWN	# if key pressed was 'S', move selection down
 	addi	t1, x0, SPACE_CODE
-	beq	t0, t1, WORLD_START	# if key pressed was 'A', go to world view
+	beq	t0, t1, WORLD_START	# if key pressed was space, go to world view
+	j	MENU_PAGE
+	
+M_MOVE_LEFT:
+	la	t0, MENU_I		# get menu index address
+	lb	t1, 0(t0)		# get current menu index
+	addi	t1, t1, -1		# dec index
+	bge	t1, x0, M_MOVE_END	# if at least 0, store new index
+	
+	# if less than 0, reset to 0
+	addi	t1, x0, 0
+	j	M_MOVE_END
+	
+M_MOVE_RIGHT:
+	la	t0, MENU_I		# get menu index address
+	lb	t1, 0(t0)		# get current menu index
+	addi	t1, t1, 1		# dec index
+	
+	addi	t2, x0, MENU_NUM_SQ	# get max allowed index
+	blt	t1, t2, M_MOVE_END	# if less than max, store new index
+	
+	# if greater than max, reset to max
+	addi	t1, x0, MENU_NUM_SQ
+	addi	t1, t1, -1
+	j	M_MOVE_END
+	
+M_MOVE_UP:
+	j	M_MOVE_END
+M_MOVE_DOWN:
+	j	M_MOVE_END
+M_MOVE_END:
+	sb	t1, 0(t0)
 	j	MENU_UPDATE
-        
+
+                
 # interrupt service routine
 ISR:
 	addi	s1, x0, 1		# set interrupt flag high
