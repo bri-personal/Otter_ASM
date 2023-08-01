@@ -81,7 +81,9 @@ TILES_ARR:	.space 80
 ALL_TILES: .space NUM_TILES
 
 # menu selection index
-MENU_I:	.space 1
+# 0 - selected index
+# 1 - previously selected index
+MENU_I:	.space 2
 
 
 # executed code
@@ -107,6 +109,8 @@ MAIN:
         # initialize menu index
         la	t0, MENU_I		# load menu index address
         sb	x0, 0(t0)		# store 0 to index
+        addi	t1, x0, -1
+        sb	t1, 1(t0)		# store -1 to prev index
         
         # init tiles array
         la	t0, ALL_TILES		# get all tiles address
@@ -516,32 +520,20 @@ MENU_DRAW_LOOP:
 MENU_UPDATE:
 	la	t0, MENU_I		# get address of menu index
 	lb	t5, 0(t0)		# get current menu index
+	lb	t6, 1(t0)		# get prev menu index
 	addi	a0, x0, 10		# set initial coords x to find rect to mark - REMOVE MAGIC NUMBER LATER
 	addi	a1, x0, 20		# set initial coords y to find rect to mark - REMOVE MAGIC NUMBER LATER
 M_I_LOOP:
-	beqz	t5, END_M_I_LOOP	# if counter reached 0, found correct rectangle
-	
-	# counter not 0
-	addi	t5, t5, -1		# dec counter
-	
-	# if counter now 0, current rect needs to be cleared
-	bnez	t5, M_I_CONT
-	
-	# save x and y coords
-	mv	t3, a0
-	mv	t4, a1
-	
-	# draw white over rect before selection
-	addi	a2, a0, 10
-	addi	a4, a1, 10
-	addi	a3, x0, WHITE
-	call	DRAW_RECT
-	
-	# restore x and y coords
-	mv	a0, t3
-	mv	a1, t4
-	
+	beqz	t6, M_CLEAR_SEL		# if counter reached 0, found correct rectangle
+	beqz	t5, M_DRAW_SEL		# if counter reached 0, found correct rectangle
+	bgez	t6, M_I_CONT
+	bltz	t5, MENU_PAGE
 M_I_CONT:
+	# counter not 0
+	addi	t5, t5, -1		# dec current index counter
+	addi	t6, t6, -1		# dec prev index counter
+
+	# go to next rect
 	addi	a0, a0, 15		# inc x to next rect
 	addi	t0, x0, WIDTH
 	addi	t0, t0, -10
@@ -552,11 +544,39 @@ M_I_CONT:
 	addi	a1, a1, 15		# inc y to next row
 	j	M_I_LOOP		# check counter again
 	
-END_M_I_LOOP:
+M_CLEAR_SEL:
+	# save x and y coords
+	mv	t3, a0
+	mv	t4, a1
+
+	# draw white cleared rectangle
+	addi	a2, a0, 10		# set coords of other corner of rect
+	addi	a4, a1, 10
+	addi	a3, x0, WHITE		# set selection color
+	call	DRAW_RECT		# draw over selected rect
+	
+	# restore x and y coords
+	mv	a0, t3
+	mv	a1, t4
+	
+	j	M_I_CONT
+	
+M_DRAW_SEL:
+	# save x and y coords
+	mv	t3, a0
+	mv	t4, a1
+
+	# draw blue selected rectangle
 	addi	a2, a0, 10		# set coords of other corner of rect
 	addi	a4, a1, 10
 	addi	a3, x0, BLUE		# set selection color
 	call	DRAW_RECT		# draw over selected rect
+	
+	# restore x and y coords
+	mv	a0, t3
+	mv	a1, t4
+	
+	j	M_I_CONT
 	
 MENU_PAGE:
 	beqz	s1, MENU_PAGE		# check for interrupt
@@ -580,24 +600,26 @@ MENU_PAGE:
 M_MOVE_LEFT:
 	la	t0, MENU_I		# get menu index address
 	lb	t1, 0(t0)		# get current menu index
+	sb	t1, 1(t0)		# store to prev index
 	addi	t1, t1, -1		# dec index
 	bge	t1, x0, M_MOVE_END	# if at least 0, store new index
 	
-	# if less than 0, reset to 0
-	addi	t1, x0, 0
+	# if less than 0, reset to max
+	addi	t1, x0, MENU_NUM_SQ
+	addi	t1, t1, -1
 	j	M_MOVE_END
 	
 M_MOVE_RIGHT:
 	la	t0, MENU_I		# get menu index address
 	lb	t1, 0(t0)		# get current menu index
+	sb	t1, 1(t0)		# store to prev index
 	addi	t1, t1, 1		# dec index
 	
 	addi	t2, x0, MENU_NUM_SQ	# get max allowed index
 	blt	t1, t2, M_MOVE_END	# if less than max, store new index
 	
 	# if greater than max, reset to max
-	addi	t1, x0, MENU_NUM_SQ
-	addi	t1, t1, -1
+	addi	t1, x0, 0
 	j	M_MOVE_END
 	
 M_MOVE_UP:
