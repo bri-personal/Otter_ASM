@@ -640,30 +640,27 @@ M_MOVE_UP:
 	la	t0, MENU_I		# get menu index address
 	lb	t1, 0(t0)		# get current menu index
 	sb	t1, 1(t0)		# store to prev index
-	addi	t2, x0, MENU_NUM_SQ	# get half of max amount in row
+	addi	t2, x0, MENU_NUM_SQ	# get max amount of rects
 	srli	t2, t2, 1		# halve max allowed to get number in each row
-	sub	t1, t1, t2		# inc index
-	slli	t2, t2, 1		# get back total number of rects
-	bltz	t1, M_MOVE_END		# if not gone past first rect, store new index
+	sub	t1, t1, t2		# dec index
+	bgez	t1, M_MOVE_END		# if not gone past first rect, store new index
 	
 	# gone past first rect
-	srli	t2, t2, 1
-	add	t1, t1, t2
+	slli	t2, t2, 1		# get back full number of rects
+	add	t1, t1, t2		# add to negative index to go to last row
 	j	M_MOVE_END
 M_MOVE_DOWN:
 	la	t0, MENU_I		# get menu index address
 	lb	t1, 0(t0)		# get current menu index
 	sb	t1, 1(t0)		# store to prev index
-	addi	t2, x0, MENU_NUM_SQ	# get half of max amount in row
+	addi	t2, x0, MENU_NUM_SQ	# get max amount of rects
 	srli	t2, t2, 1		# halve max allowed to get number in each row
 	add	t1, t1, t2		# inc index
 	slli	t2, t2, 1		# get back total number of rects
 	blt	t1, t2, M_MOVE_END	# if not gone past last rect, store new index
 	
 	# gone past last rect
-	srli	t2, t2, 1
-	sub	t1, t1, t2
-	
+	sub	t1, t1, t2		# subtract from too high index to go to first row
 	j	M_MOVE_END
 M_MOVE_END:
 	sb	t1, 0(t0)		# store new index
