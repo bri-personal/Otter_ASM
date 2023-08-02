@@ -182,17 +182,17 @@ WORLD_PAGE:
 	# move character
 	lw	t0, 0x100(s0)		# read keyboard input
 	addi	t1, x0, A_CODE
-	beq	t0, t1, P_MOVE_LEFT	# check if 'A' was pressed
+	beq	t0, t1, W_P_MOVE_LEFT	# check if 'A' was pressed
 	addi	t1, x0, D_CODE
-	beq	t0, t1, P_MOVE_RIGHT	# check if 'D' was pressed
+	beq	t0, t1, W_P_MOVE_RIGHT	# check if 'D' was pressed
 	addi	t1, x0, W_CODE
-	beq	t0, t1, P_MOVE_UP	# check if 'W' was pressed
+	beq	t0, t1, W_P_MOVE_UP	# check if 'W' was pressed
 	addi	t1, x0, S_CODE
-	beq	t0, t1, P_MOVE_DOWN	# check if 'S' was pressed
+	beq	t0, t1, W_P_MOVE_DOWN	# check if 'S' was pressed
 	addi	t1, x0, SPACE_CODE
 	beq	t0, t1, MENU_START	# go to menu page if space pressed
 	j	WORLD_PAGE
-P_MOVE_LEFT:
+W_P_MOVE_LEFT:
 	la	t2, PLAYER		# get player address
 	
 	# set orientation to left
@@ -261,7 +261,7 @@ P_MOVE_LEFT:
 	call	DRAW_WORLD		# redraw tiles with new offset
 	j	WORLD_UPDATE
 	
-P_MOVE_RIGHT:
+W_P_MOVE_RIGHT:
 	la	t2, PLAYER		# store orientation in player array
 	
 	# set orientation to right
@@ -334,7 +334,7 @@ P_MOVE_RIGHT:
 	call	DRAW_WORLD		# redraw tiles with new offset
 	j	WORLD_UPDATE
 	
-P_MOVE_UP:
+W_P_MOVE_UP:
 	la	t2, PLAYER		# store orientation in player array
 		
 	# set orientation to up
@@ -403,7 +403,7 @@ P_MOVE_UP:
 	call	DRAW_WORLD		# redraw tiles with new offset
 	j	WORLD_UPDATE
 	
-P_MOVE_DOWN:
+W_P_MOVE_DOWN:
 	la	t2, PLAYER		# store orientation in player array
 	
 	# set orientation to down
@@ -674,12 +674,12 @@ DRAW_PLAYER:
 	# draw head based on orientation
 	lb	t2, 2(t3)		# get player orientation
 	addi	t5, x0, 1
-	beq	t2, t5, OR_UP		# player orientation up
+	beq	t2, t5, DP_OR_UP	# player orientation up
 	addi	t5, t5, 1
-	beq	t2, t5, OR_LEFT		# player orientation left
+	beq	t2, t5, DP_OR_LEFT		# player orientation left
 	addi	t5, t5, 1
-	beq	t2, t5, OR_RIGHT	# player orientation right
-OR_DOWN:
+	beq	t2, t5, DP_OR_RIGHT	# player orientation right
+DP_OR_DOWN:
 	# draw hair
 	lb	a0, 0(t3)		# player x coord
 	lb	a1, 1(t3)		# player y coord
@@ -712,8 +712,8 @@ OR_DOWN:
 	addi	a1, a1, 1
 	addi	a3, x0, RED
 	call	DRAW_DOT
-	j	OR_END
-OR_UP:
+	j	DP_OR_END
+DP_OR_UP:
 	#draw hair
 	lb	a0, 0(t3)		# player x coord
 	lb	a1, 1(t3)		# player y coord
@@ -731,9 +731,9 @@ OR_UP:
 	addi	a2, a2, -1
 	addi	a3, x0, WHITE
 	call	DRAW_HORIZ_LINE
-	j	OR_END
+	j	DP_OR_END
 	
-OR_LEFT:
+DP_OR_LEFT:
 	#draw face
 	lb	a0, 0(t3)		# player x coord
 	lb	a1, 1(t3)		# player y coord
@@ -769,8 +769,8 @@ OR_LEFT:
 	addi	a1, a1, 1
 	addi	a3, x0, RED
 	call	DRAW_DOT
-	j	OR_END
-OR_RIGHT:
+	j	DP_OR_END
+DP_OR_RIGHT:
 	#draw face
 	lb	a0, 0(t3)		# player x coord
 	lb	a1, 1(t3)		# player y coord
@@ -806,9 +806,9 @@ OR_RIGHT:
 	addi	a1, a1, 1
 	addi	a3, x0, RED
 	call	DRAW_DOT
-	j	OR_END
+	j	DP_OR_END
 	
-OR_END:
+DP_OR_END:
 	lw	ra, 0(sp)
 	addi	sp, sp, 4
 	ret
