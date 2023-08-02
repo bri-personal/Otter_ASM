@@ -30,7 +30,6 @@
 
 # menu quantities - NEED TO USE THESE IN MENU CODE
 .eqv	MENU_SQ_SIZE	10	# width and height of squares on menu page
-.eqv	MENU_BTW_SIZE	15	# dist from topleft of menu square to topleft of next to right or down
 .eqv	MENU_NUM_SQ	8	# number of squares in menu
 
 # define colors
@@ -497,36 +496,55 @@ MENU_START:
 	call	DRAW_LETTER
 	
 	# draw menu squares
-	addi	t3, x0, 10		# save initial coords x - REMOVE MAGIC NUMBER LATER
-	addi	t4, x0, 20		# save initial coords y - REMOVE MAGIC NUMBER LATER
+	# save initial coords x
+	addi	t3, x0, MENU_SQ_SIZE
+	srli	t3, t3, 1		# x starts at half square size
+	
+	# save initial coords y
+	addi	t4, x0, MENU_SQ_SIZE	# y starts at 1.5 square size
+	add	t4, t4, t3
+	
 	addi	a3, x0, WHITE		# set color
 MENU_DRAW_LOOP:
 	# set coords for drawing rectangle
 	mv	a0, t3
 	mv	a1, t4
-	addi	a2, a0, 10
-	addi	a4, a1, 10
+	addi	a2, a0, MENU_SQ_SIZE
+	addi	a4, a1, MENU_SQ_SIZE
 	
 	call	DRAW_RECT		# draw rectangle
 	
-	addi	t3, t3, 15		# inc x to next rect
+	# get square size to inc
+	addi	t0, x0, MENU_SQ_SIZE
+	slli	t0, t0, 1		# add 2x square size to get to next square
+	
+	# inc x pos and check for overflow
+	add	t3, t3, t0		# inc x to next rect
 	addi	t0, x0, WIDTH
-	addi	t0, t0, -10
+	addi	t0, t0, -MENU_SQ_SIZE
 	blt	t3, t0, MENU_DRAW_LOOP	# if x not too far right, draw next rect
 	
 	# x too far right
-	addi	t3, x0, 10		# reset x
-	addi	t4, t4, 15		# inc y to next row
+	# reset x
+	addi	t3, x0, MENU_SQ_SIZE	# x starts at half square size
+	srli	t3, t3, 1
+	
+	# get square size to inc
+	addi	t0, x0, MENU_SQ_SIZE
+	slli	t0, t0, 1		# add 2x square size to get to next row
+	
+	# inc y pos to next row and check for overflow
+	add	t4, t4, t0
 	addi	t0, x0, HEIGHT
-	addi	t0, t0, -10
+	addi	t0, t0, -MENU_SQ_SIZE
 	blt	t4, t0, MENU_DRAW_LOOP	# if y not too far down, draw next rect. otherwise end loop
 	
 MENU_UPDATE:
 	la	t0, MENU_I		# get address of menu index
 	lb	t5, 0(t0)		# get current menu index
 	lb	t6, 1(t0)		# get prev menu index
-	addi	a0, x0, 10		# set initial coords x to find rect to mark - REMOVE MAGIC NUMBER LATER
-	addi	a1, x0, 20		# set initial coords y to find rect to mark - REMOVE MAGIC NUMBER LATER
+	addi	a0, x0, 5		# set initial coords x to find rect to mark - REMOVE MAGIC NUMBER LATER
+	addi	a1, x0, 15		# set initial coords y to find rect to mark - REMOVE MAGIC NUMBER LATER
 M_I_LOOP:
 	beqz	t6, M_CLEAR_SEL		# if counter reached 0, found correct rectangle
 	beqz	t5, M_DRAW_SEL		# if counter reached 0, found correct rectangle
@@ -538,14 +556,14 @@ M_I_CONT:
 	addi	t6, t6, -1		# dec prev index counter
 
 	# go to next rect
-	addi	a0, a0, 15		# inc x to next rect
+	addi	a0, a0, 20		# inc x to next rect
 	addi	t0, x0, WIDTH
 	addi	t0, t0, -10
 	blt	a0, t0, M_I_LOOP	# if x not too far right, check counter again
 	
 	# x too far right
-	addi	a0, x0, 10		# reset x
-	addi	a1, a1, 15		# inc y to next row
+	addi	a0, x0, 5		# reset x
+	addi	a1, a1, 20		# inc y to next row
 	j	M_I_LOOP		# check counter again
 	
 M_CLEAR_SEL:
