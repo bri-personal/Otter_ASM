@@ -146,11 +146,15 @@ TITLE_START:
         addi	a0, x0, L_SIZE
         addi	a1, x0, L_SIZE
         addi	a3, x0, WHITE
-        addi	a2, x0, 'A'
-        call	DRAW_LETTER
-        addi	a2, x0, 'E'
+        addi	a2, x0, 'T'
         call	DRAW_LETTER
         addi	a2, x0, 'I'
+        call	DRAW_LETTER
+        addi	a2, x0, 'T'
+        call	DRAW_LETTER
+        addi	a2, x0, 'L'
+        call	DRAW_LETTER
+        addi	a2, x0, 'E'
         call	DRAW_LETTER
 TITLE_UPDATE:
 	beqz	s1, TITLE_UPDATE	# check for interrupt
@@ -993,6 +997,14 @@ DRAW_LETTER:
 	beq	a2, t0, DL_A		# ascii 'A'
 	addi	t0, x0, 'E'
 	beq 	a2, t0, DL_E		# ascii 'E'
+	addi	t0, x0, 'I'
+	beq 	a2, t0, DL_I		# ascii 'I'
+	addi	t0, x0, 'M'
+	beq 	a2, t0, DL_M		# ascii 'M'
+	addi	t0, x0, 'N'
+	beq 	a2, t0, DL_N		# ascii 'N'
+	addi	t0, x0, 'U'
+	beq 	a2, t0, DL_U		# ascii 'U'
 	j	DL_UNKNOWN		# unimplemented ascii
 DL_A:
 	# draw 5x5 A
@@ -1035,6 +1047,85 @@ DL_E:
 	addi	a1, t3, 4
 	addi	a2, a0, 3
 	call	DRAW_HORIZ_LINE
+	j	DL_END
+	
+DL_I:
+	# draw 5x5 I
+	addi	a0, a0, 1
+	addi	a2, a0, 2
+	call	DRAW_HORIZ_LINE
+	
+	addi	a0, t2, 2
+	mv	a1, t3
+	addi	a2, a1, 3
+	call	DRAW_VERT_LINE
+	
+	addi	a0, t2, 1
+	addi	a1, t3, 4
+	addi	a2, a0, 2
+	call	DRAW_HORIZ_LINE
+	j	DL_END
+	
+DL_M:
+	# draw 5x5 M
+	addi	a2, a1, 4
+	call	DRAW_VERT_LINE
+	
+	addi	a0, t2, 1
+	addi	a1, t3, 1
+	call	DRAW_DOT
+	
+	addi	a0, t2, 2
+	addi	a1, t3, 2
+	call	DRAW_DOT
+	
+	addi	a0, t2, 3
+	addi	a1, t3, 1
+	call	DRAW_DOT
+	
+	addi	a0, t2, 4
+	mv	a1, t3
+	addi	a2, a1, 4
+	call	DRAW_VERT_LINE
+	j	DL_END
+	
+DL_N:
+	# draw 5x5 N
+	addi	a2, a1, 4
+	call	DRAW_VERT_LINE
+	
+	addi	a0, t2, 1
+	addi	a1, t3, 1
+	call	DRAW_DOT
+	
+	addi	a0, t2, 2
+	addi	a1, t3, 2
+	call	DRAW_DOT
+	
+	addi	a0, t2, 3
+	addi	a1, t3, 3
+	call	DRAW_DOT
+	
+	addi	a0, t2, 4
+	mv	a1, t3
+	addi	a2, a1, 4
+	call	DRAW_VERT_LINE
+	j	DL_END
+	
+DL_U:
+	# draw 5x5 U
+	addi	a2, a1, 3
+	call	DRAW_VERT_LINE
+	
+	addi	a0, t2, 1
+	addi	a1, t3, 4
+	addi	a2, a0, 2
+	call	DRAW_HORIZ_LINE
+	
+	addi	a0, t2, 4
+	mv	a1, t3
+	addi	a2, a1, 3
+	call	DRAW_VERT_LINE
 	j	DL_END
 	
 DL_UNKNOWN:
