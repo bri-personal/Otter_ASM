@@ -28,9 +28,10 @@
 # letter dimensions
 .eqv	L_SIZE	5		# width and height of letters
 
-# menu quantities - NEED TO USE THESE IN MENU CODE
+# menu quantities
+# MUST have 2 rows of equal number of squares and size must WIDTH / MENU_NUM_SQ
+.eqv	MENU_NUM_SQ	8	# total number of squares in menu - must be even
 .eqv	MENU_SQ_SIZE	10	# width and height of squares on menu page
-.eqv	MENU_NUM_SQ	8	# number of squares in menu
 
 # define colors
 .eqv	BLACK		0
