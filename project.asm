@@ -602,42 +602,47 @@ MENU_PAGE:
 	j	MENU_PAGE
 	
 M_MOVE_LEFT:
+	# set up menu index
 	la	t0, MENU_I		# get menu index address
 	lb	t1, 0(t0)		# get current menu index
 	sb	t1, 1(t0)		# store to prev index
-	addi	t1, t1, -1		# dec index
+	addi	t1, t1, -1		# dec current index
 	
-	# set num in each row in advance
+	# set num in each row in advance for checking/calcs
 	addi	t2, x0, MENU_NUM_SQ	# get max allowed index
 	srli	t2, t2, 1		# halve max allowed to get number in each row
 	
-	bltz	t1, M_M_LEFT_OF		# if less than 0, go to end of row
+	# check for underflow
+	bltz	t1, M_M_LEFT_UF		# if current index less than 0, go to end of 1st row
 	addi	t2, t2, -1		# get index of rect before 2nd row
 	beq	t1, t2, M_M_LEFT_REST	# if gone from 2nd row to 1st, go to end of 2nd row
 	j	M_MOVE_END
 M_M_LEFT_REST:
 	# restore t2 to hold num in each row
-	addi	t2, t2, 1
-M_M_LEFT_OF:
-	# if less than 0, reset to max
+	addi	t2, t2, 1		# add 1 since it was subtracted above
+M_M_LEFT_UF:
+	# row underflow, set to end of row
 	add	t1, t1, t2		# add number in each row to go to end of row
 	j	M_MOVE_END
 	
 M_MOVE_RIGHT:
+	# set up menu index
 	la	t0, MENU_I		# get menu index address
 	lb	t1, 0(t0)		# get current menu index
 	sb	t1, 1(t0)		# store to prev index
 	addi	t1, t1, 1		# inc index
 	
+	# check for overflow
 	addi	t2, x0, MENU_NUM_SQ	# get max allowed index
-	beq	t1, t2, M_M_RIGHT_2	# if reached max, go back to beginning of row
+	bge	t1, t2, M_M_RIGHT_REST	# if reached max, go back to beginning of row
 	srli	t2, t2, 1		# get half of max amount in row
-	beq	t1, t2, M_M_RIGHT_3	# if reached half of max, go back to beginning of row
+	beq	t1, t2, M_M_RIGHT_OF	# if reached half of max, go back to beginning of row
 	j	M_MOVE_END
-M_M_RIGHT_2:
-	# reached max
+M_M_RIGHT_REST:
+	# set t2 to hold num in each row
 	srli	t2, t2, 1		# halve max allowed to get number in each row
-M_M_RIGHT_3:
+M_M_RIGHT_OF:
+	# row overflow, set to beginning of row
 	sub	t1, t1, t2		# subtract to go to beginning of row
 	j	M_MOVE_END
 	
