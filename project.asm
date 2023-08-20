@@ -39,9 +39,13 @@
 .eqv	RED		0xE0
 .eqv	GREEN		0x1C
 .eqv	BLUE		0x03
+.eqv	YELLOW		0xFC
+.eqv	MAGENTA		0xE3
+.eqv	CYAN		0x1F
 .eqv	D_GREEN		0x08
 .eqv	BROWN		0x89
 .eqv	WALL_COLOR	D_GREEN
+.eqv	M_SEL_COLOR	CYAN
 
 # define key codes
 .eqv	A_CODE		0x1C
@@ -80,9 +84,11 @@ TILES_ARR:	.space 80
 # 2 - red (also empty)
 ALL_TILES: .space NUM_TILES
 
-# menu selection index
+# menu selection index (2 bytes) and button colors (number of bytes for number of buttons)
 # 0 - currently selected index
-MENU_I:	.space 1
+# 1 - prev selected index
+# 2-9 - colors of buttons
+MENU_ARR:	.space 10
 
 
 # executed code
@@ -106,7 +112,7 @@ MAIN:
         sw	t1, 0(t0)		# fill with 0 for all offsets
         
         # initialize menu index
-        la	t0, MENU_I		# load menu index address
+        la	t0, MENU_ARR		# load menu index address
         sb	x0, 0(t0)		# store 0 to index
         addi	t1, x0, -1
         sb	t1, 1(t0)		# store -1 to prev index
@@ -122,7 +128,7 @@ TILES_ARR_LOOP:
         blt	t1, t2, TILES_ARR_LOOP	# if new address in all tiles is still within bounds, store addr of next row
         
         # load tile codes into ALL_TILES array
-        call	LOAD_WORLD_TILES
+        call	LOAD_DATA
         
         # setup ISR address
         la	t0, ISR
@@ -497,8 +503,9 @@ MENU_START:
 
 MENU_UPDATE:
 	# draw menu squares
-	la	t0, MENU_I		# get address of menu index
-	lb	t5, 0(t0)		# get current menu index
+	la	t6, MENU_ARR		# get address of menu array
+	lb	t5, 0(t6)		# get current menu index
+	addi	t6, t6, 2		# set to first index of colors
 	
 	# save initial coords x
 	addi	t3, x0, MENU_SQ_SIZE
@@ -523,9 +530,42 @@ MENU_DRAW_LOOP:
 	j	MENU_DRAW_CONT
 MENU_DRAW_SEL:
 	# selected, draw blue
-	addi	a3, x0, BLUE
+	addi	a3, x0, M_SEL_COLOR
 MENU_DRAW_CONT:
 	call	DRAW_RECT		# draw rectangle
+	
+	# draw image on menu button
+	# draw empty square	
+	lb	a3, 0(t6)		# set color of inner square
+	addi	t6, t6, 1		# go to next index
+	
+	addi	a0, t3, 1		# get start of inner square x
+	addi	a1, t4, 1		# get start of inner square y
+	addi	a2, a0, MENU_SQ_SIZE
+	addi	a2, a2, -2
+	call	DRAW_HORIZ_LINE
+	
+	addi	a0, t3, 1		# get start of inner square x not filled yet
+	addi	a1, t4, 2		# get start of inner square y not filled yet
+	addi	a2, a1, MENU_SQ_SIZE
+	addi	a2, a2, -3
+	call	DRAW_VERT_LINE
+	
+	addi	a0, t3, 2		# get bottom left of inner square x not filled yet
+	addi	a1, t4, MENU_SQ_SIZE	# get bottom left of inner square y not filled yet
+	addi	a1, a1, -1
+	addi	a2, a0, MENU_SQ_SIZE
+	addi	a2, a2, -3
+	call	DRAW_HORIZ_LINE
+	
+	addi	a0, t3, 1		# get top right of inner square x not filled yet
+	addi	a0, a0, MENU_SQ_SIZE
+	addi	a0, a0, -2
+	addi	a1, t4, 2		# get top right of inner square y not filled yet
+	addi	a2, a1, MENU_SQ_SIZE
+	addi	a2, a2, -4
+	call	DRAW_VERT_LINE
+	#####
 	
 	addi	t5, t5, -1		# dec counter for current selected index
 	
@@ -575,7 +615,7 @@ MENU_PAGE:
 	
 M_MOVE_LEFT:
 	# set up menu index
-	la	t0, MENU_I		# get menu index address
+	la	t0, MENU_ARR		# get menu index address
 	lb	t1, 0(t0)		# get current menu index
 	sb	t1, 1(t0)		# store to prev index
 	addi	t1, t1, -1		# dec current index
@@ -599,7 +639,7 @@ M_M_LEFT_UF:
 	
 M_MOVE_RIGHT:
 	# set up menu index
-	la	t0, MENU_I		# get menu index address
+	la	t0, MENU_ARR		# get menu index address
 	lb	t1, 0(t0)		# get current menu index
 	sb	t1, 1(t0)		# store to prev index
 	addi	t1, t1, 1		# inc index
@@ -619,7 +659,7 @@ M_M_RIGHT_OF:
 	j	M_MOVE_END
 	
 M_MOVE_UP:
-	la	t0, MENU_I		# get menu index address
+	la	t0, MENU_ARR		# get menu index address
 	lb	t1, 0(t0)		# get current menu index
 	sb	t1, 1(t0)		# store to prev index
 	addi	t2, x0, MENU_NUM_SQ	# get max amount of rects
@@ -632,7 +672,7 @@ M_MOVE_UP:
 	add	t1, t1, t2		# add to negative index to go to last row
 	j	M_MOVE_END
 M_MOVE_DOWN:
-	la	t0, MENU_I		# get menu index address
+	la	t0, MENU_ARR		# get menu index address
 	lb	t1, 0(t0)		# get current menu index
 	sb	t1, 1(t0)		# store to prev index
 	addi	t2, x0, MENU_NUM_SQ	# get max amount of rects
@@ -1168,12 +1208,43 @@ DRAW_VERT_1:
 	addi	sp, sp, 4
 	ret
 	
-# loads tile codes into ALL_TILES array for world
-# should be called in initialization of world page (WORLD_START)
-# modifies t0, t1
-LOAD_WORLD_TILES:
+# loads all data into data segment that needs to be preset
+# # loads button colors into menu array
+# # loads tile codes into ALL_TILES array for world
+# # should be called in initialization of world page (WORLD_START)
+# # modifies t0, t1
+LOAD_DATA:
 	addi	sp, sp, -4
 	sw	ra, 0(sp)
+	
+	# load menu button scolors
+	la	t0, MENU_ARR
+	addi	t0, t0, 2		# get address of first color, after bytes reserved for button index
+	
+	# store color bytes in array
+	addi	t1, x0, RED
+	sb	t1, 0(t0)
+	addi	t0, t0, 1
+	addi	t1, x0, GREEN
+	sb	t1, 0(t0)
+	addi	t0, t0, 1
+	addi	t1, x0, BLUE
+	sb	t1, 0(t0)
+	addi	t0, t0, 1
+	addi	t1, x0, YELLOW
+	sb	t1, 0(t0)
+	addi	t0, t0, 1
+	addi	t1, x0, MAGENTA
+	sb	t1, 0(t0)
+	addi	t0, t0, 1
+	addi	t1, x0, D_GREEN
+	sb	t1, 0(t0)
+	addi	t0, t0, 1
+	addi	t1, x0, BROWN
+	sb	t1, 0(t0)
+	addi	t0, t0, 1
+	addi	t1, x0, BLACK
+	sb	t1, 0(t0)
 	
 	# load world tiles
         la	t0, TILES_ARR		# get tiles array address. t2 is still end of all tiles
