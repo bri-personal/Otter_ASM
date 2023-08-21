@@ -36,16 +36,19 @@
 # define colors
 .eqv	BLACK		0
 .eqv	WHITE		0xFF
+.eqv	L_GRAY		0x92
 .eqv	RED		0xE0
 .eqv	GREEN		0x1C
 .eqv	BLUE		0x03
 .eqv	YELLOW		0xFC
 .eqv	MAGENTA		0xE3
 .eqv	CYAN		0x1F
+.eqv	ORANGE		0xF0
+.eqv	PURPLE		0xA3
 .eqv	D_GREEN		0x08
 .eqv	BROWN		0x89
 .eqv	WALL_COLOR	D_GREEN
-.eqv	M_SEL_COLOR	CYAN
+.eqv	M_SEL_COLOR	L_GRAY
 
 # define key codes
 .eqv	A_CODE		0x1C
@@ -1017,10 +1020,14 @@ DRAW_LETTER:
 	beq 	a2, t0, DL_E		# ascii 'E'
 	addi	t0, x0, 'I'
 	beq 	a2, t0, DL_I		# ascii 'I'
+	addi	t0, x0, 'L'
+	beq 	a2, t0, DL_L		# ascii 'L'
 	addi	t0, x0, 'M'
 	beq 	a2, t0, DL_M		# ascii 'M'
 	addi	t0, x0, 'N'
 	beq 	a2, t0, DL_N		# ascii 'N'
+	addi	t0, x0, 'T'
+	beq 	a2, t0, DL_T		# ascii 'T'
 	addi	t0, x0, 'U'
 	beq 	a2, t0, DL_U		# ascii 'U'
 	j	DL_UNKNOWN		# unimplemented ascii
@@ -1084,6 +1091,17 @@ DL_I:
 	call	DRAW_HORIZ_LINE
 	j	DL_END
 	
+DL_L:
+	# draw 5x5 L
+	addi	a2, a1, 4
+	call	DRAW_VERT_LINE
+	
+	addi	a0, t2, 1
+	addi	a1, t3, 4
+	addi	a2, a0, 2
+	call	DRAW_HORIZ_LINE
+	j	DL_END
+	
 DL_M:
 	# draw 5x5 M
 	addi	a2, a1, 4
@@ -1127,6 +1145,17 @@ DL_N:
 	addi	a0, t2, 4
 	mv	a1, t3
 	addi	a2, a1, 4
+	call	DRAW_VERT_LINE
+	j	DL_END
+	
+DL_T:
+	# draw 5x5 T
+	addi	a2, a0, 4
+	call	DRAW_HORIZ_LINE
+	
+	addi	a0, t2, 2
+	addi	a1, t3, 1
+	addi	a2, a1, 3
 	call	DRAW_VERT_LINE
 	j	DL_END
 	
@@ -1222,28 +1251,28 @@ LOAD_DATA:
 	addi	t0, t0, 2		# get address of first color, after bytes reserved for button index
 	
 	# store color bytes in array
-	addi	t1, x0, RED
+	addi	t1, x0, RED		# dex
 	sb	t1, 0(t0)
 	addi	t0, t0, 1
-	addi	t1, x0, GREEN
+	addi	t1, x0, MAGENTA		# party
 	sb	t1, 0(t0)
 	addi	t0, t0, 1
-	addi	t1, x0, BLUE
+	addi	t1, x0, ORANGE		# bag
 	sb	t1, 0(t0)
 	addi	t0, t0, 1
-	addi	t1, x0, YELLOW
+	addi	t1, x0, CYAN		# save
 	sb	t1, 0(t0)
 	addi	t0, t0, 1
-	addi	t1, x0, MAGENTA
+	addi	t1, x0, GREEN		# map
 	sb	t1, 0(t0)
 	addi	t0, t0, 1
-	addi	t1, x0, D_GREEN
+	addi	t1, x0, BLUE		# player info
 	sb	t1, 0(t0)
 	addi	t0, t0, 1
-	addi	t1, x0, BROWN
+	addi	t1, x0, YELLOW		# battle
 	sb	t1, 0(t0)
 	addi	t0, t0, 1
-	addi	t1, x0, BLACK
+	addi	t1, x0, PURPLE		# settings
 	sb	t1, 0(t0)
 	
 	# load world tiles
