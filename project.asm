@@ -93,6 +93,9 @@ ALL_TILES: .space NUM_TILES
 # 2-9 - colors of buttons
 MENU_ARR:	.space 10
 
+# title string, each byte is a character
+TITLE_STR:	.space 27
+
 
 # executed code
 .text
@@ -1016,6 +1019,8 @@ DRAW_LETTER:
 	# check which letter it is
 	addi	t0, x0, 'A'
 	beq	a2, t0, DL_A		# ascii 'A'
+	addi	t0, x0, 'B'
+	beq	a2, t0, DL_B		# ascii 'B'
 	addi	t0, x0, 'E'
 	beq 	a2, t0, DL_E		# ascii 'E'
 	addi	t0, x0, 'I'
@@ -1045,12 +1050,40 @@ DL_A:
 	addi	a0, a0, 4
 	addi	a1, t3, 1
 	addi	a2, a1, 3
-	call DRAW_VERT_LINE
+	call	DRAW_VERT_LINE
 	
 	addi	a0, t2, 1
 	addi	a1, t3, 2
 	addi	a2, a0, 2
 	call	DRAW_HORIZ_LINE
+	j	DL_END
+	
+DL_B:
+	# draw 5x5 B
+	addi	a2, a1, 4
+	call	DRAW_VERT_LINE
+	
+	addi	a0, t2, 1
+	mv	a1, t3
+	addi	a2, a0, 1
+	call	DRAW_HORIZ_LINE
+	
+	addi	a0, t2, 1
+	addi	a1, t3, 2
+	addi	a2, a0, 1
+	call	DRAW_HORIZ_LINE
+	
+	addi	a0, t2, 1
+	addi	a1, t3, 4
+	addi	a2, a0, 1
+	call	DRAW_HORIZ_LINE
+	
+	addi	a0, t2, 3
+	addi	a1, t3, 1
+	call	DRAW_DOT
+	
+	addi	a1, t3, 3
+	call	DRAW_DOT
 	j	DL_END
 	
 DL_E:
@@ -1238,13 +1271,25 @@ DRAW_VERT_1:
 	ret
 	
 # loads all data into data segment that needs to be preset
+# # load title string
 # # loads button colors into menu array
 # # loads tile codes into ALL_TILES array for world
 # # should be called in initialization of world page (WORLD_START)
-# # modifies t0, t1
+# # modifies t0, t1, t2
 LOAD_DATA:
 	addi	sp, sp, -4
 	sw	ra, 0(sp)
+	
+	# load title string
+	la	t0, TITLE_STR
+	addi	t1, x0, 'A'
+	addi	t2, t0, 26
+LD_LOOP:
+	sb	t1, 0(t0)
+	addi	t0, t0, 1
+	addi	t1, t1, 1
+	blt	t1, t2, LD_LOOP
+	# last character in array is intentionally left 0 as terminator
 	
 	# load menu button scolors
 	la	t0, MENU_ARR
