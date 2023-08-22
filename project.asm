@@ -93,8 +93,10 @@ ALL_TILES: .space NUM_TILES
 # 2-9 - colors of buttons
 MENU_ARR:	.space 10
 
-# title string, each byte is a character
-TITLE_STR:	.space 27
+# strings - each byte is a character
+# last byte must be 0 as terminator character
+TITLE_STR:	.space 27		# text displayed on title screen
+MENU_STR:	.space 5		# text displayed on menu screen
 
 
 # executed code
@@ -492,14 +494,8 @@ MENU_START:
 	addi	a0, x0, L_SIZE
 	addi	a1, x0, L_SIZE
 	addi	a3, x0, WHITE
-	addi	a2, x0, 'M'
-	call	DRAW_LETTER
-	addi	a2, x0, 'E'
-	call	DRAW_LETTER
-	addi	a2, x0, 'N'
-	call	DRAW_LETTER
-	addi	a2, x0, 'U'
-	call	DRAW_LETTER
+	la	a2, MENU_STR
+	call	DRAW_STRING
 
 MENU_UPDATE:
 	# draw menu squares
@@ -1314,6 +1310,18 @@ LD_LOOP:
 	addi	t1, t1, 1
 	blt	t0, t2, LD_LOOP
 	sb	x0, 0(t0)		# last character in array is intentionally left 0 as terminator
+	
+	# load menu string
+	la	t0, MENU_STR
+	addi	t1, x0, 'M'
+	sb	t1, 0(t0)
+	addi	t1, x0, 'E'
+	sb	t1, 1(t0)
+	addi	t1, x0, 'N'
+	sb	t1, 2(t0)
+	addi	t1, x0, 'U'
+	sb	t1, 3(t0)
+	sb	x0, 4(t0)		# last character in array is intentionally left 0 as terminator
 	
 	# load menu button scolors
 	la	t0, MENU_ARR
