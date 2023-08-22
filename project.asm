@@ -154,19 +154,13 @@ TITLE_START:
         call	DRAW_BG			# fill background
         
         # draw title text
+        la	a2, TITLE_STR		# get title string address
         addi	a0, x0, L_SIZE
         addi	a1, x0, L_SIZE
         addi	a3, x0, WHITE
-        addi	a2, x0, 'T'
-        call	DRAW_LETTER
-        addi	a2, x0, 'I'
-        call	DRAW_LETTER
-        addi	a2, x0, 'T'
-        call	DRAW_LETTER
-        addi	a2, x0, 'L'
-        call	DRAW_LETTER
-        addi	a2, x0, 'E'
-        call	DRAW_LETTER
+        
+	call DRAW_STRING		# draw title string
+	
 TITLE_UPDATE:
 	beqz	s1, TITLE_UPDATE	# check for interrupt
 	
@@ -1239,6 +1233,36 @@ DL_END:
 	addi	sp, sp, 4
 	ret
 	
+# draws string of characters starting with top left at coords given by x from a0, and y from a1
+# with color given by a3 and byte array address given by a2
+# modifies t0, t1, t2, t3, t4, a0, a1, a2
+DRAW_STRING:
+	addi	sp, sp, -4
+	sw	ra, 0(sp)
+	
+	mv	t4, a2			# save address in t4 because a2 is used in DRAW_LETTER
+DS_LOOP:
+	lb	a2, 0(t4)		# get char from string
+        beqz	a2, DS_END		# if terminating 0, done with string
+        call	DRAW_LETTER		# draw current letter
+        addi	t4, t4, 1		# go to next index of string
+        
+        # check if need to go to new line
+        addi	t0, a0, L_SIZE
+        addi	t0, t0, -WIDTH
+        bltz	t0, DS_LOOP		# if end of next char is offscreen, go to next line
+        addi	a0, x0, L_SIZE		# reset x
+        addi	a1, a1, L_SIZE		# go to next line y
+        addi	a1, a1, 1
+        addi	t0, a1, L_SIZE
+        addi	t0, t0, -HEIGHT
+        bltz	t0, DS_LOOP		# if bottom of next char is offscreen, end
+
+DS_END:
+	lw	ra, 0(sp)
+	addi	sp, sp, 4
+	ret
+	
 	
 # VGA subroutines #################################################
 
@@ -1288,8 +1312,8 @@ LD_LOOP:
 	sb	t1, 0(t0)
 	addi	t0, t0, 1
 	addi	t1, t1, 1
-	blt	t1, t2, LD_LOOP
-	# last character in array is intentionally left 0 as terminator
+	blt	t0, t2, LD_LOOP
+	sb	x0, 0(t0)		# last character in array is intentionally left 0 as terminator
 	
 	# load menu button scolors
 	la	t0, MENU_ARR
