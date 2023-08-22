@@ -1011,8 +1011,14 @@ DRAW_LETTER:
 	beq	a2, t0, DL_A		# ascii 'A'
 	addi	t0, x0, 'B'
 	beq	a2, t0, DL_B		# ascii 'B'
+	addi	t0, x0, 'C'
+	beq	a2, t0, DL_C		# ascii 'C'
+	addi	t0, x0, 'D'
+	beq	a2, t0, DL_D		# ascii 'D'
 	addi	t0, x0, 'E'
 	beq 	a2, t0, DL_E		# ascii 'E'
+	addi	t0, x0, 'F'
+	beq	a2, t0, DL_F		# ascii 'F'
 	addi	t0, x0, 'I'
 	beq 	a2, t0, DL_I		# ascii 'I'
 	addi	t0, x0, 'L'
@@ -1076,6 +1082,44 @@ DL_B:
 	call	DRAW_DOT
 	j	DL_END
 	
+DL_C:
+	# draw 5x5 C
+	addi	a1, a1, 1
+	addi	a2, a1, 2
+	call	DRAW_VERT_LINE
+	
+	addi	a0, t2, 1
+	mv	a1, t3
+	addi	a2, a0, 2
+	call	DRAW_HORIZ_LINE
+	
+	addi	a0, t2, 1
+	addi	a1, t3, 4
+	addi	a2, a0, 2
+	call	DRAW_HORIZ_LINE
+	j	DL_END
+	
+DL_D:
+	# draw 5x5 D
+	addi	a2, a1, 4
+	call	DRAW_VERT_LINE
+	
+	addi	a0, t2, 1
+	mv	a1, t3
+	addi	a2, a0, 1
+	call	DRAW_HORIZ_LINE
+	
+	addi	a0, t2, 1
+	addi	a1, t3, 4
+	addi	a2, a0, 1
+	call	DRAW_HORIZ_LINE
+	
+	addi	a0, t2, 3
+	addi	a1, t3, 1
+	addi	a2, a1, 2
+	call	DRAW_VERT_LINE
+	j	DL_END
+	
 DL_E:
 	# draw 5x5 E
 	addi	a2, a1, 4
@@ -1094,6 +1138,22 @@ DL_E:
 	addi	a0, t2, 1
 	addi	a1, t3, 4
 	addi	a2, a0, 3
+	call	DRAW_HORIZ_LINE
+	j	DL_END
+	
+DL_F:
+	# draw 5x5 E
+	addi	a2, a1, 4
+	call	DRAW_VERT_LINE
+	
+	addi	a0, t2, 1
+	mv	a1, t3
+	addi	a2, a0, 3
+	call	DRAW_HORIZ_LINE
+	
+	addi	a0, t2, 1
+	addi	a1, t3, 2
+	addi	a2, a0, 2
 	call	DRAW_HORIZ_LINE
 	j	DL_END
 	
@@ -1229,7 +1289,7 @@ DL_END:
 	addi	sp, sp, 4
 	ret
 	
-# draws string of characters starting with top left at coords given by x from a0, and y from a1
+# draws string of 5x5 characters starting with top left at coords given by x from a0, and y from a1
 # with color given by a3 and byte array address given by a2
 # modifies t0, t1, t2, t3, t4, a0, a1, a2
 DRAW_STRING:
