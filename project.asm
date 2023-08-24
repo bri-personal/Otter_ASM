@@ -107,7 +107,7 @@ MAIN:
 	# initialize important values/addresses
 	li	sp, STACK		# setup sp
         li	s0, MMIO		# setup MMIO pointer
-        addi	s1, x0, 0		# set interrupt flag to 0
+        mv	s1, x0			# set interrupt flag to 0
         
         # initialize player position
         la	t0, PLAYER		# load address of player pos
@@ -164,7 +164,6 @@ TITLE_START:
         addi	a3, x0, WHITE
         
 	call DRAW_STRING		# draw title string
-	
 TITLE_PAGE:
 	beqz	s1, TITLE_PAGE	# check for interrupt
 	
@@ -202,6 +201,7 @@ WORLD_PAGE:
 	addi	t1, x0, X_CODE
 	beq	t0, t1, MENU_START	# go to menu page if space pressed
 	j	WORLD_PAGE
+# move player left in world view
 W_P_MOVE_LEFT:
 	la	t2, PLAYER		# get player address
 	
@@ -270,7 +270,7 @@ W_P_MOVE_LEFT:
 	sb	t1, 0(t0)		# store new x
 	call	DRAW_WORLD		# redraw tiles with new offset
 	j	WORLD_UPDATE
-	
+# move player right in world view
 W_P_MOVE_RIGHT:
 	la	t2, PLAYER		# store orientation in player array
 	
@@ -343,7 +343,7 @@ W_P_MOVE_RIGHT:
 	sb	t1, 0(t0)		# store new x
 	call	DRAW_WORLD		# redraw tiles with new offset
 	j	WORLD_UPDATE
-	
+# move player up in world view
 W_P_MOVE_UP:
 	la	t2, PLAYER		# store orientation in player array
 		
@@ -412,7 +412,7 @@ W_P_MOVE_UP:
 	sb	t1, 1(t0)		# store new y
 	call	DRAW_WORLD		# redraw tiles with new offset
 	j	WORLD_UPDATE
-	
+# move player down in world view
 W_P_MOVE_DOWN:
 	la	t2, PLAYER		# store orientation in player array
 	
@@ -606,11 +606,29 @@ MENU_PAGE:
 	addi	t1, x0, S_CODE
 	beq	t0, t1, M_MOVE_DOWN	# if key pressed was 'S', move selection down
 	addi	t1, x0, X_CODE
-	beq	t0, t1, PARTY_START	# if key pressed was 'X', go to party page
+	beq	t0, t1, M_SEL_BUTTON	# if key pressed was 'X', select button and go to corresponding page
 	addi	t1, x0, SPACE_CODE
 	beq	t0, t1, WORLD_START	# if key pressed was space, go to world view
-	j	MENU_PAGE
-	
+	j	MENU_PAGE	
+# use current selection index to determine which page to go to next
+M_SEL_BUTTON:
+	la	t0, MENU_ARR		# get address of index
+	lb	t0, 0(t0)		# get index
+	beq	t0, x0, MENU_PAGE	# 0 - dex
+	addi	t1, x0, 1
+	beq	t0, t1, PARTY_START	# 1 - party
+	addi	t1, t1, 1
+	beq	t0, t1, MENU_PAGE	# 2 - bag
+	addi	t1, t1, 1
+	beq	t0, t1, MENU_PAGE	# 3 - save
+	addi	t1, t1, 1
+	beq	t0, t1, MENU_PAGE	# 4 - map
+	addi	t1, t1, 1
+	beq	t0, t1, MENU_PAGE	# 5 - player info
+	addi	t1, t1, 1
+	beq	t0, t1, MENU_PAGE	# 6 - battle
+	j	MENU_PAGE		# 7 - settings
+# move menu selection left
 M_MOVE_LEFT:
 	# set up menu index
 	la	t0, MENU_ARR		# get menu index address
@@ -634,7 +652,7 @@ M_M_LEFT_UF:
 	# row underflow, set to end of row
 	add	t1, t1, t2		# add number in each row to go to end of row
 	j	M_MOVE_END
-	
+# move menu selection right
 M_MOVE_RIGHT:
 	# set up menu index
 	la	t0, MENU_ARR		# get menu index address
@@ -655,7 +673,7 @@ M_M_RIGHT_OF:
 	# row overflow, set to beginning of row
 	sub	t1, t1, t2		# subtract to go to beginning of row
 	j	M_MOVE_END
-	
+# move menu selection up
 M_MOVE_UP:
 	la	t0, MENU_ARR		# get menu index address
 	lb	t1, 0(t0)		# get current menu index
@@ -669,6 +687,7 @@ M_MOVE_UP:
 	slli	t2, t2, 1		# get back full number of rects
 	add	t1, t1, t2		# add to negative index to go to last row
 	j	M_MOVE_END
+# move menu selection down
 M_MOVE_DOWN:
 	la	t0, MENU_ARR		# get menu index address
 	lb	t1, 0(t0)		# get current menu index
@@ -708,7 +727,6 @@ PARTY_PAGE:
 	addi	t1, x0, SPACE_CODE
 	beq	t0, t1, MENU_START	# if key pressed was space, go to menu page
 	j	PARTY_PAGE
-	
 	
                 
 # interrupt service routine
@@ -1451,7 +1469,7 @@ LD_TITLE_LOOP:
 	sb	t1, 4(t0)
 	sb	x0, 5(t0)		# last character in array is intentionally left 0 as terminator
 	
-	# load menu button scolors
+	# load menu button colors
 	la	t0, MENU_ARR
 	addi	t0, t0, 2		# get address of first color, after bytes reserved for button index
 	
