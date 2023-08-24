@@ -28,6 +28,11 @@
 # letter dimensions
 .eqv	L_SIZE	5		# width and height of letters
 
+# party quantities
+.eqv	PARTY_SIZE	6	# number of members of party/number of rects to be drawn
+.eqv	PARTY_RECT_W	30	# width of party rectangles
+.eqv	PARTY_RECT_H	6	# height of party rectangles
+
 # menu quantities
 # MUST have 2 rows of equal number of squares and size must WIDTH / MENU_NUM_SQ
 .eqv	MENU_NUM_SQ	8	# total number of squares in menu - must be even
@@ -716,7 +721,31 @@ PARTY_START:
 	addi	a3, x0, WHITE
 	la	a2, PARTY_STR
 	call	DRAW_STRING
+	
+	# draw line
+	addi	a0, x0, WIDTH
+	srli	a0, a0, 1
+	addi	a1, x0, 2
+	addi	a2, x0, HEIGHT
+	addi	a2, a2, -2
+	call	DRAW_VERT_LINE
 PARTY_UPDATE:
+	addi	t3, x0, PARTY_SIZE	# counter for drawing rects
+	
+	# draw rectangles for each member of party
+	addi	a0, x0, L_SIZE		# set initial x
+	addi	a1, x0, L_SIZE		# set initial y
+	slli	a1, a1, 1		# "
+	addi	a1, a1, 1		# "
+P_DRAW_LOOP:
+	addi	a3, x0, WHITE		# set color of rect
+	addi	a2, a0, PARTY_RECT_W	# get other corner of rect
+	addi	a4, a1, PARTY_RECT_H	# "
+	call	DRAW_RECT		# draw rect
+	mv	a1, a4			# go to y for next rect
+	addi	a1, a1, 1		# "
+	addi	t3, t3, -1		# dec counter
+	bgtz	t3, P_DRAW_LOOP		# if counter reaches 0, done drawing rects
 PARTY_PAGE:
 	beqz	s1, PARTY_PAGE		# check for interrupt
 	
