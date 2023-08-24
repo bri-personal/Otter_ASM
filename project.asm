@@ -55,6 +55,7 @@
 .eqv	D_CODE		0x23
 .eqv	S_CODE		0x1B
 .eqv	W_CODE		0x1D
+.eqv	X_CODE		0x22
 .eqv	SPACE_CODE	0x29
 
 
@@ -95,8 +96,9 @@ MENU_ARR:	.space 10
 
 # strings - each byte is a character
 # last byte must be 0 as terminator character
-TITLE_STR:	.space 27		# text displayed on title screen
-MENU_STR:	.space 5		# text displayed on menu screen
+TITLE_STR:	.space 27		# title text displayed on title screen
+MENU_STR:	.space 5		# title text displayed on menu screen
+PARTY_STR:	.space 6		# title text displayed
 
 
 # executed code
@@ -163,15 +165,15 @@ TITLE_START:
         
 	call DRAW_STRING		# draw title string
 	
-TITLE_UPDATE:
-	beqz	s1, TITLE_UPDATE	# check for interrupt
+TITLE_PAGE:
+	beqz	s1, TITLE_PAGE	# check for interrupt
 	
 	# on interrupt
 	addi	s1, x0, 0		# clear interrupt flag
 	lw	t0, 0x100(s0)		# read keyboard input
-	addi	t1, x0, A_CODE
-	beq	t0, t1, WORLD_START	# if key pressed was 'A', go to world view
-	j	TITLE_UPDATE
+	addi	t1, x0, X_CODE
+	beq	t0, t1, WORLD_START	# if key pressed was 'X', go to world view
+	j	TITLE_PAGE
 	
 # page opened after title page
 WORLD_START:
@@ -197,7 +199,7 @@ WORLD_PAGE:
 	beq	t0, t1, W_P_MOVE_UP	# check if 'W' was pressed
 	addi	t1, x0, S_CODE
 	beq	t0, t1, W_P_MOVE_DOWN	# check if 'S' was pressed
-	addi	t1, x0, SPACE_CODE
+	addi	t1, x0, X_CODE
 	beq	t0, t1, MENU_START	# go to menu page if space pressed
 	j	WORLD_PAGE
 W_P_MOVE_LEFT:
@@ -496,7 +498,6 @@ MENU_START:
 	addi	a3, x0, WHITE
 	la	a2, MENU_STR
 	call	DRAW_STRING
-
 MENU_UPDATE:
 	# draw menu squares
 	la	t6, MENU_ARR		# get address of menu array
@@ -589,7 +590,6 @@ MENU_DRAW_CONT:
 	addi	t0, x0, HEIGHT
 	addi	t0, t0, -MENU_SQ_SIZE
 	blt	t4, t0, MENU_DRAW_LOOP	# if y not too far down, draw next rect. otherwise end loop
-	
 MENU_PAGE:
 	beqz	s1, MENU_PAGE		# check for interrupt
 	
@@ -605,6 +605,8 @@ MENU_PAGE:
 	beq	t0, t1, M_MOVE_UP	# if key pressed was 'W', move selection up
 	addi	t1, x0, S_CODE
 	beq	t0, t1, M_MOVE_DOWN	# if key pressed was 'S', move selection down
+	addi	t1, x0, X_CODE
+	beq	t0, t1, PARTY_START	# if key pressed was 'X', go to party page
 	addi	t1, x0, SPACE_CODE
 	beq	t0, t1, WORLD_START	# if key pressed was space, go to world view
 	j	MENU_PAGE
@@ -684,6 +686,30 @@ M_MOVE_END:
 	sb	t1, 0(t0)		# store new index
 	j	MENU_UPDATE
 
+# party page shows what is in party and reserves
+PARTY_START:
+	addi	a3, x0, RED
+	call	DRAW_BG
+	
+	# draw menu title text
+	addi	a0, x0, L_SIZE
+	addi	a1, x0, L_SIZE
+	addi	a3, x0, WHITE
+	la	a2, PARTY_STR
+	call	DRAW_STRING
+PARTY_UPDATE:
+PARTY_PAGE:
+	beqz	s1, PARTY_PAGE		# check for interrupt
+	
+	# on interrupt
+	addi	s1, x0, 0		# clear interrupt flag
+	
+	lw	t0, 0x100(s0)		# read keyboard input
+	addi	t1, x0, SPACE_CODE
+	beq	t0, t1, MENU_START	# if key pressed was space, go to menu page
+	j	PARTY_PAGE
+	
+	
                 
 # interrupt service routine
 ISR:
@@ -1392,11 +1418,11 @@ LOAD_DATA:
 	la	t0, TITLE_STR
 	addi	t1, x0, 'A'
 	addi	t2, t0, 26
-LD_LOOP:
+LD_TITLE_LOOP:
 	sb	t1, 0(t0)
 	addi	t0, t0, 1
 	addi	t1, t1, 1
-	blt	t0, t2, LD_LOOP
+	blt	t0, t2, LD_TITLE_LOOP
 	sb	x0, 0(t0)		# last character in array is intentionally left 0 as terminator
 	
 	# load menu string
@@ -1410,6 +1436,20 @@ LD_LOOP:
 	addi	t1, x0, 'U'
 	sb	t1, 3(t0)
 	sb	x0, 4(t0)		# last character in array is intentionally left 0 as terminator
+	
+	# load party string
+	la	t0, PARTY_STR
+	addi	t1, x0, 'P'
+	sb	t1, 0(t0)
+	addi	t1, x0, 'A'
+	sb	t1, 1(t0)
+	addi	t1, x0, 'R'
+	sb	t1, 2(t0)
+	addi	t1, x0, 'T'
+	sb	t1, 3(t0)
+	addi	t1, x0, 'Y'
+	sb	t1, 4(t0)
+	sb	x0, 5(t0)		# last character in array is intentionally left 0 as terminator
 	
 	# load menu button scolors
 	la	t0, MENU_ARR
