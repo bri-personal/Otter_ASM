@@ -746,6 +746,33 @@ P_DRAW_LOOP:
 	addi	a1, a1, 1		# "
 	addi	t3, t3, -1		# dec counter
 	bgtz	t3, P_DRAW_LOOP		# if counter reaches 0, done drawing rects
+	
+	# draw rectangles for boxes
+	addi	a0, x0, WIDTH		# set initial x
+	srli	a0, a0, 1		# "
+	addi	a0, a0, L_SIZE		# "
+	mv	t4, a0			# save this initial x for drawing later
+	addi	a1, x0, L_SIZE		# set initial y
+	slli	a1, a1, 1		# "
+	addi	a1, a1, 1		# "
+P_B_DRAW_LOOP:
+	addi	a3, x0, WHITE		# set color of rect
+	addi	a2, a0, PARTY_RECT_H	# get other corner of rect
+	addi	a4, a1, PARTY_RECT_H	# "
+	call	DRAW_RECT		# draw rect
+	mv	a0, a2			# go to x for next rect
+	addi	a0, a0, 2		# "
+	addi	a1, a1, -PARTY_RECT_H	# reset y
+	addi	a1, a1, -1		# "
+	addi	t0, a0, -WIDTH		# compare x to width to see if going off screen
+	addi	t0, t0, PARTY_RECT_H	# "
+	bltz	t0, P_B_DRAW_LOOP	# if right side of rect is not offscreen, draw next one
+	mv	a0, t4			# reset x
+	addi	a1, a1, PARTY_RECT_H	# set y to next row
+	addi	a1, a1, 2		# "
+	addi	t0, a1, -HEIGHT		# compare y to height to see if going off screen
+	addi	t0, t0, PARTY_RECT_H	# "
+	bltz	t0, P_B_DRAW_LOOP	# if bottom of rect is not offscreen, draw next one
 PARTY_PAGE:
 	beqz	s1, PARTY_PAGE		# check for interrupt
 	
