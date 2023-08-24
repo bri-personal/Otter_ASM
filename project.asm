@@ -1019,6 +1019,8 @@ DRAW_LETTER:
 	beq 	a2, t0, DL_E		# ascii 'E'
 	addi	t0, x0, 'F'
 	beq	a2, t0, DL_F		# ascii 'F'
+	addi	t0, x0, 'G'
+	beq	a2, t0, DL_G		# ascii 'G'
 	addi	t0, x0, 'I'
 	beq 	a2, t0, DL_I		# ascii 'I'
 	addi	t0, x0, 'L'
@@ -1156,6 +1158,32 @@ DL_F:
 	addi	a2, a0, 2
 	call	DRAW_HORIZ_LINE
 	j	DL_END
+	
+DL_G:		
+	# draw 5x5 G
+	addi	a0, a0, 1
+	addi	a2, a0, 2
+	call	DRAW_HORIZ_LINE
+	
+	mv	a0, t2
+	addi	a1, t3, 1
+	addi	a2, a1, 2
+	call	DRAW_VERT_LINE
+	
+	addi	a0, t2, 1
+	addi	a1, t3, 4
+	addi	a2, a0, 2
+	call	DRAW_HORIZ_LINE
+	
+	addi	a0, t2, 4
+	addi	a1, t3, 2
+	addi	a2, a1, 1
+	call	DRAW_VERT_LINE
+	
+	addi	a0, t2, 3
+	addi	a1, t3, 2
+	call	DRAW_DOT	
+	j DL_END
 	
 DL_I:
 	# draw 5x5 I
