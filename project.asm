@@ -103,7 +103,8 @@ MENU_ARR:	.space 10
 # last byte must be 0 as terminator character
 TITLE_STR:	.space 27		# title text displayed on title screen
 MENU_STR:	.space 5		# title text displayed on menu screen
-PARTY_STR:	.space 6		# title text displayed
+PARTY_STR:	.space 6		# title text displayed on party screen
+BOXES_STR:	.space 6		# title text displayed for boxes on party screen
 
 
 # executed code
@@ -716,16 +717,24 @@ PARTY_START:
 	call	DRAW_BG
 	
 	# draw menu title text
-	addi	a0, x0, L_SIZE
-	addi	a1, x0, L_SIZE
-	addi	a3, x0, WHITE
-	la	a2, PARTY_STR
+	addi	a0, x0, L_SIZE		# set initial x
+	addi	a1, x0, L_SIZE		# set initial y
+	addi	a3, x0, WHITE		# set color
+	la	a2, PARTY_STR		# get string address
+	call	DRAW_STRING
+	
+	# draw boxes title text
+	addi	a0, x0, WIDTH		# set initial x
+	srli	a0, a0, 1		# "
+	addi	a0, a0, L_SIZE		# "
+	addi	a1, x0, L_SIZE		# set initial y
+	la	a2, BOXES_STR		# get string address
 	call	DRAW_STRING
 	
 	# draw line
-	addi	a0, x0, WIDTH
-	srli	a0, a0, 1
-	addi	a1, x0, 2
+	addi	a0, x0, WIDTH		# set initial x
+	srli	a0, a0, 1		# "
+	addi	a1, x0, 2		# set initial y
 	addi	a2, x0, HEIGHT
 	addi	a2, a2, -2
 	call	DRAW_VERT_LINE
@@ -1129,6 +1138,10 @@ DRAW_LETTER:
 	beq 	a2, t0, DL_M		# ascii 'M'
 	addi	t0, x0, 'N'
 	beq 	a2, t0, DL_N		# ascii 'N'
+	addi	t0, x0, 'O'
+	beq 	a2, t0, DL_O		# ascii 'O'
+	addi	t0, x0, 'P'
+	beq 	a2, t0, DL_P		# ascii 'P'
 	addi	t0, x0, 'T'
 	beq 	a2, t0, DL_T		# ascii 'T'
 	addi	t0, x0, 'U'
@@ -1163,23 +1176,24 @@ DL_B:
 	
 	addi	a0, t2, 1
 	mv	a1, t3
-	addi	a2, a0, 1
+	addi	a2, a0, 2
 	call	DRAW_HORIZ_LINE
 	
 	addi	a0, t2, 1
 	addi	a1, t3, 2
-	addi	a2, a0, 1
+	addi	a2, a0, 2
 	call	DRAW_HORIZ_LINE
 	
 	addi	a0, t2, 1
 	addi	a1, t3, 4
-	addi	a2, a0, 1
+	addi	a2, a0, 2
 	call	DRAW_HORIZ_LINE
 	
-	addi	a0, t2, 3
+	addi	a0, t2, 4
 	addi	a1, t3, 1
 	call	DRAW_DOT
 	
+	addi	a0, t2, 4
 	addi	a1, t3, 3
 	call	DRAW_DOT
 	j	DL_END
@@ -1199,6 +1213,13 @@ DL_C:
 	addi	a1, t3, 4
 	addi	a2, a0, 2
 	call	DRAW_HORIZ_LINE
+	
+	addi	a0, t2, 4
+	addi	a1, t3, 1
+	call	DRAW_DOT
+	
+	addi	a1, t3, 3
+	call	DRAW_DOT
 	j	DL_END
 	
 DL_D:
@@ -1208,15 +1229,15 @@ DL_D:
 	
 	addi	a0, t2, 1
 	mv	a1, t3
-	addi	a2, a0, 1
+	addi	a2, a0, 2
 	call	DRAW_HORIZ_LINE
 	
 	addi	a0, t2, 1
 	addi	a1, t3, 4
-	addi	a2, a0, 1
+	addi	a2, a0, 2
 	call	DRAW_HORIZ_LINE
 	
-	addi	a0, t2, 3
+	addi	a0, t2, 4
 	addi	a1, t3, 1
 	addi	a2, a1, 2
 	call	DRAW_VERT_LINE
@@ -1244,7 +1265,7 @@ DL_E:
 	j	DL_END
 	
 DL_F:
-	# draw 5x5 E
+	# draw 5x5 F
 	addi	a2, a1, 4
 	call	DRAW_VERT_LINE
 	
@@ -1357,6 +1378,48 @@ DL_N:
 	mv	a1, t3
 	addi	a2, a1, 4
 	call	DRAW_VERT_LINE
+	j	DL_END
+	
+DL_O:
+	# draw 5x5 O
+	addi	a1, a1, 1
+	addi	a2, a1, 2
+	call	DRAW_VERT_LINE
+	
+	addi	a0, t2, 1
+	mv	a1, t3
+	addi	a2, a0, 2
+	call	DRAW_HORIZ_LINE
+	
+	addi	a0, t2, 4
+	addi	a1, t3, 1
+	addi	a2, a1, 2
+	call	DRAW_VERT_LINE
+	
+	addi	a0, t2, 1
+	addi	a1, t3, 4
+	addi	a2, a0, 2
+	call	DRAW_HORIZ_LINE
+	j	DL_END
+	
+DL_P:
+	# draw 5x5 P
+	addi	a2, a1, 4
+	call	DRAW_VERT_LINE
+	
+	addi	a0, t2, 1
+	mv	a1, t3
+	addi	a2, a0, 2
+	call	DRAW_HORIZ_LINE
+	
+	addi	a0, t2, 1
+	addi	a1, t3, 2
+	addi	a2, a0, 2
+	call	DRAW_HORIZ_LINE
+	
+	addi	a0, t2, 4
+	addi	a1, t3, 1
+	call	DRAW_DOT
 	j	DL_END
 	
 DL_T:
@@ -1522,6 +1585,20 @@ LD_TITLE_LOOP:
 	addi	t1, x0, 'T'
 	sb	t1, 3(t0)
 	addi	t1, x0, 'Y'
+	sb	t1, 4(t0)
+	sb	x0, 5(t0)		# last character in array is intentionally left 0 as terminator
+	
+	# load boxes string
+	la	t0, BOXES_STR
+	addi	t1, x0, 'B'
+	sb	t1, 0(t0)
+	addi	t1, x0, 'O'
+	sb	t1, 1(t0)
+	addi	t1, x0, 'X'
+	sb	t1, 2(t0)
+	addi	t1, x0, 'E'
+	sb	t1, 3(t0)
+	addi	t1, x0, 'S'
 	sb	t1, 4(t0)
 	sb	x0, 5(t0)		# last character in array is intentionally left 0 as terminator
 	
