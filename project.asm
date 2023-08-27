@@ -1130,8 +1130,14 @@ DRAW_LETTER:
 	beq	a2, t0, DL_F		# ascii 'F'
 	addi	t0, x0, 'G'
 	beq	a2, t0, DL_G		# ascii 'G'
+	addi	t0, x0, 'H'
+	beq 	a2, t0, DL_H		# ascii 'H'
 	addi	t0, x0, 'I'
 	beq 	a2, t0, DL_I		# ascii 'I'
+	addi	t0, x0, 'J'
+	beq 	a2, t0, DL_J		# ascii 'J'
+	addi	t0, x0, 'K'
+	beq 	a2, t0, DL_K		# ascii 'K'
 	addi	t0, x0, 'L'
 	beq 	a2, t0, DL_L		# ascii 'L'
 	addi	t0, x0, 'M'
@@ -1142,10 +1148,26 @@ DRAW_LETTER:
 	beq 	a2, t0, DL_O		# ascii 'O'
 	addi	t0, x0, 'P'
 	beq 	a2, t0, DL_P		# ascii 'P'
+	addi	t0, x0, 'Q'
+	beq 	a2, t0, DL_Q		# ascii 'Q'
+	addi	t0, x0, 'R'
+	beq 	a2, t0, DL_R		# ascii 'R'
+	addi	t0, x0, 'S'
+	beq 	a2, t0, DL_S		# ascii 'S'
 	addi	t0, x0, 'T'
 	beq 	a2, t0, DL_T		# ascii 'T'
 	addi	t0, x0, 'U'
 	beq 	a2, t0, DL_U		# ascii 'U'
+	addi	t0, x0, 'V'
+	beq 	a2, t0, DL_V		# ascii 'V'
+	addi	t0, x0, 'W'
+	beq 	a2, t0, DL_W		# ascii 'W'
+	addi	t0, x0, 'X'
+	beq 	a2, t0, DL_X		# ascii 'X'
+	addi	t0, x0, 'Y'
+	beq 	a2, t0, DL_Y		# ascii 'Y'
+	addi	t0, x0, 'Z'
+	beq 	a2, t0, DL_Z		# ascii 'Z'
 	j	DL_UNKNOWN		# unimplemented ascii
 DL_A:
 	# draw 5x5 A
@@ -1306,6 +1328,9 @@ DL_G:
 	call	DRAW_DOT	
 	j DL_END
 	
+DL_H:
+	j	DL_UNKNOWN
+	
 DL_I:
 	# draw 5x5 I
 	addi	a0, a0, 1
@@ -1322,6 +1347,12 @@ DL_I:
 	addi	a2, a0, 2
 	call	DRAW_HORIZ_LINE
 	j	DL_END
+	
+DL_J:
+	j	DL_UNKNOWN
+	
+DL_K:
+	j	DL_UNKNOWN
 	
 DL_L:
 	# draw 5x5 L
@@ -1422,6 +1453,15 @@ DL_P:
 	call	DRAW_DOT
 	j	DL_END
 	
+DL_Q:
+	j	DL_UNKNOWN
+	
+DL_R:
+	j	DL_UNKNOWN
+	
+DL_S:
+	j	DL_UNKNOWN
+	
 DL_T:
 	# draw 5x5 T
 	addi	a2, a0, 4
@@ -1448,6 +1488,21 @@ DL_U:
 	addi	a2, a1, 3
 	call	DRAW_VERT_LINE
 	j	DL_END
+	
+DL_V:
+	j	DL_UNKNOWN
+	
+DL_W:
+	j	DL_UNKNOWN
+	
+DL_X:
+	j	DL_UNKNOWN
+	
+DL_Y:
+	j	DL_UNKNOWN
+	
+DL_Z:
+	j	DL_UNKNOWN
 	
 DL_UNKNOWN:
 	# draw 5x5 square
