@@ -101,7 +101,7 @@ MENU_ARR:	.space 10
 
 # strings - each byte is a character
 # last byte must be 0 as terminator character
-TITLE_STR:	.space 42		# title text displayed on title screen
+TITLE_STR:	.space 43		# title text displayed on title screen
 MENU_STR:	.space 5		# title text displayed on menu screen
 PARTY_STR:	.space 6		# title text displayed on party screen
 BOXES_STR:	.space 6		# title text displayed for boxes on party screen
@@ -1116,7 +1116,7 @@ DRAW_LETTER:
 	
 	# check which letter it is
 	addi	t0, x0, ' '
-	beq	a2, t0, DL_END		# for space, just skip to next placment of char
+	beq	a2, t0, DL_SPACE	# ascii space
 	addi	t0, x0, 'A'
 	beq	a2, t0, DL_A		# ascii 'A'
 	addi	t0, x0, 'B'
@@ -1198,6 +1198,10 @@ DRAW_LETTER:
 	addi	t0, x0, '?'
 	beq	a2, t0, DL_QUEST	# ascii '?'
 	j	DL_UNKNOWN		# unimplemented ascii
+DL_SPACE:
+	# set t0 to horiz length of this char in pixels + 1
+	addi	t0, x0, 6
+	j	DL_END
 DL_A:
 	# draw max 5x5 A
 	addi	a0, a0, 1
@@ -1218,6 +1222,9 @@ DL_A:
 	addi	a1, t3, 2
 	addi	a2, a0, 2
 	call	DRAW_HORIZ_LINE
+	
+	# set t0 to horiz length of this char in pixels + 1
+	addi	t0, x0, 6
 	j	DL_END
 DL_B:
 	# draw max 5x5 B
@@ -1246,6 +1253,9 @@ DL_B:
 	addi	a0, t2, 4
 	addi	a1, t3, 3
 	call	DRAW_DOT
+	
+	# set t0 to horiz length of this char in pixels + 1
+	addi	t0, x0, 6
 	j	DL_END
 DL_C:
 	# draw max 5x5 C
@@ -1269,6 +1279,9 @@ DL_C:
 	
 	addi	a1, t3, 3
 	call	DRAW_DOT
+	
+	# set t0 to horiz length of this char in pixels + 1
+	addi	t0, x0, 6
 	j	DL_END
 DL_D:
 	# draw max 5x5 D
@@ -1289,6 +1302,9 @@ DL_D:
 	addi	a1, t3, 1
 	addi	a2, a1, 2
 	call	DRAW_VERT_LINE
+	
+	# set t0 to horiz length of this char in pixels + 1
+	addi	t0, x0, 6
 	j	DL_END
 DL_E:
 	# draw max 5x5 E
@@ -1309,6 +1325,9 @@ DL_E:
 	addi	a1, t3, 4
 	addi	a2, a0, 3
 	call	DRAW_HORIZ_LINE
+	
+	# set t0 to horiz length of this char in pixels + 1
+	addi	t0, x0, 6
 	j	DL_END
 DL_F:
 	# draw max 5x5 F
@@ -1324,6 +1343,9 @@ DL_F:
 	addi	a1, t3, 2
 	addi	a2, a0, 2
 	call	DRAW_HORIZ_LINE
+	
+	# set t0 to horiz length of this char in pixels + 1
+	addi	t0, x0, 6
 	j	DL_END
 DL_G:	
 	# draw max 5x5 G
@@ -1348,7 +1370,10 @@ DL_G:
 	
 	addi	a0, t2, 3
 	addi	a1, t3, 2
-	call	DRAW_DOT	
+	call	DRAW_DOT
+	
+	# set t0 to horiz length of this char in pixels + 1
+	addi	t0, x0, 6	
 	j DL_END
 DL_H:
 	# draw max 5x5 H
@@ -1364,22 +1389,27 @@ DL_H:
 	mv	a1, t3
 	addi	a2, a1, 4
 	call	DRAW_VERT_LINE
+	
+	# set t0 to horiz length of this char in pixels + 1
+	addi	t0, x0, 6
 	j	DL_END
 DL_I:
 	# draw max 5x5 I
-	addi	a0, a0, 1
 	addi	a2, a0, 2
 	call	DRAW_HORIZ_LINE
 	
-	addi	a0, t2, 2
+	addi	a0, t2, 1
 	mv	a1, t3
 	addi	a2, a1, 3
 	call	DRAW_VERT_LINE
 	
-	addi	a0, t2, 1
+	mv	a0, t2
 	addi	a1, t3, 4
 	addi	a2, a0, 2
 	call	DRAW_HORIZ_LINE
+	
+	# set t0 to horiz length of this char in pixels + 1
+	addi	t0, x0, 4
 	j	DL_END
 DL_J:
 	# draw max 5x5 J
@@ -1400,6 +1430,9 @@ DL_J:
 	addi	a0, t2, 0
 	addi	a1, t3, 3
 	call	DRAW_DOT
+	
+	# set t0 to horiz length of this char in pixels + 1
+	addi	t0, x0, 6
 	j	DL_END
 DL_K:
 	# draw max 5x5 K
@@ -1425,6 +1458,9 @@ DL_K:
 	addi	a0, t2, 3
 	addi	a1, t3, 4
 	call	DRAW_DOT
+	
+	# set t0 to horiz length of this char in pixels + 1
+	addi	t0, x0, 5
 	j	DL_END
 DL_L:
 	# draw max 5x5 L
@@ -1435,6 +1471,9 @@ DL_L:
 	addi	a1, t3, 4
 	addi	a2, a0, 2
 	call	DRAW_HORIZ_LINE
+	
+	# set t0 to horiz length of this char in pixels + 1
+	addi	t0, x0, 5
 	j	DL_END
 DL_M:
 	# draw max 5x5 M
@@ -1457,6 +1496,9 @@ DL_M:
 	mv	a1, t3
 	addi	a2, a1, 4
 	call	DRAW_VERT_LINE
+	
+	# set t0 to horiz length of this char in pixels + 1
+	addi	t0, x0, 6
 	j	DL_END
 DL_N:
 	# draw max 5x5 N
@@ -1479,6 +1521,9 @@ DL_N:
 	mv	a1, t3
 	addi	a2, a1, 4
 	call	DRAW_VERT_LINE
+	
+	# set t0 to horiz length of this char in pixels + 1
+	addi	t0, x0, 6
 	j	DL_END
 DL_O:
 	# draw max 5x5 O
@@ -1500,6 +1545,10 @@ DL_O:
 	addi	a1, t3, 4
 	addi	a2, a0, 2
 	call	DRAW_HORIZ_LINE
+	
+	
+	# set t0 to horiz length of this char in pixels + 1
+	addi	t0, x0, 6
 	j	DL_END
 DL_P:
 	# draw max 5x5 P
@@ -1519,8 +1568,10 @@ DL_P:
 	addi	a0, t2, 4
 	addi	a1, t3, 1
 	call	DRAW_DOT
-	j	DL_END
 	
+	# set t0 to horiz length of this char in pixels + 1
+	addi	t0, x0, 6
+	j	DL_END
 DL_Q:
 	# draw 5x5 Q
 	addi	a1, a1, 1
@@ -1549,6 +1600,9 @@ DL_Q:
 	addi	a0, t2, 4
 	addi	a1, t3, 4
 	call	DRAW_DOT
+	
+	# set t0 to horiz length of this char in pixels + 1
+	addi	t0, x0, 6
 	j	DL_END
 DL_R:
 	# draw max 5x5 R
@@ -1573,6 +1627,9 @@ DL_R:
 	addi	a1, t3, 3
 	addi	a2, a1, 1
 	call	DRAW_VERT_LINE
+	
+	# set t0 to horiz length of this char in pixels + 1
+	addi	t0, x0, 6
 	j	DL_END
 DL_S:
 	# draw max 5x5 S
@@ -1597,6 +1654,9 @@ DL_S:
 	addi	a1, t3, 4
 	addi	a2, a0, 3
 	call	DRAW_HORIZ_LINE
+	
+	# set t0 to horiz length of this char in pixels + 1
+	addi	t0, x0, 6
 	j	DL_END
 DL_T:
 	# draw max 5x5 T
@@ -1607,6 +1667,9 @@ DL_T:
 	addi	a1, t3, 1
 	addi	a2, a1, 3
 	call	DRAW_VERT_LINE
+	
+	# set t0 to horiz length of this char in pixels + 1
+	addi	t0, x0, 6
 	j	DL_END
 DL_U:
 	# draw max 5x5 U
@@ -1622,6 +1685,9 @@ DL_U:
 	mv	a1, t3
 	addi	a2, a1, 3
 	call	DRAW_VERT_LINE
+	
+	# set t0 to horiz length of this char in pixels + 1
+	addi	t0, x0, 6
 	j	DL_END
 DL_V:
 	# draw max 5x5 V
@@ -1646,6 +1712,9 @@ DL_V:
 	addi	a1, t3, 2
 	addi	a2, a1, 1
 	call	DRAW_VERT_LINE
+	
+	# set t0 to horiz length of this char in pixels + 1
+	addi	t0, x0, 6
 	j	DL_END
 DL_W:
 	# draw max 5x5 W
@@ -1668,6 +1737,9 @@ DL_W:
 	mv	a1, t3
 	addi	a2, a1, 4
 	call	DRAW_VERT_LINE
+	
+	# set t0 to horiz length of this char in pixels + 1
+	addi	t0, x0, 6
 	j	DL_END
 DL_X:
 	# draw max 5x5 X
@@ -1704,6 +1776,9 @@ DL_X:
 	addi 	a0, t2, 0
 	addi	a1, t3, 4
 	call	DRAW_DOT
+	
+	# set t0 to horiz length of this char in pixels + 1
+	addi	t0, x0, 6
 	j	DL_END
 DL_Y:
 	# draw max 5x5 Y
@@ -1725,6 +1800,9 @@ DL_Y:
 	addi	a1, t3, 2
 	addi	a2, a1, 2
 	call	DRAW_VERT_LINE
+	
+	# set t0 to horiz length of this char in pixels + 1
+	addi	t0, x0, 6
 	j	DL_END
 DL_Z:
 	# draw max 5x5 Z
@@ -1747,11 +1825,17 @@ DL_Z:
 	addi	a1, t3, 4
 	addi	a2, a0, 4
 	call	DRAW_HORIZ_LINE
+	
+	# set t0 to horiz length of this char in pixels + 1
+	addi	t0, x0, 6
 	j	DL_END
 DL_PERIOD:
 	# draw max 5x5 .
 	addi	a1, a1, 4
 	call	DRAW_DOT
+	
+	# set t0 to horiz length of this char in pixels + 1
+	addi	t0, x0, 2
 	j	DL_END
 DL_COMMA:
 	# draw max 5x5 ,
@@ -1760,6 +1844,9 @@ DL_COMMA:
 	addi	a0, t2, 1
 	addi	a1, t3, 3
 	call	DRAW_DOT
+	
+	# set t0 to horiz length of this char in pixels + 1
+	addi	t0, x0, 3
 	j	DL_END
 DL_EXCLAM:
 	# draw max 5x5 !
@@ -1768,6 +1855,9 @@ DL_EXCLAM:
 	
 	addi	a1, t3, 4
 	call	DRAW_DOT
+	
+	# set t0 to horiz length of this char in pixels + 1
+	addi	t0, x0, 2
 	j	DL_END
 DL_QUEST:
 	# draw max 5x5 ?
@@ -1791,6 +1881,9 @@ DL_QUEST:
 	addi	a0, t2, 2
 	addi	a1, t3, 4
 	call	DRAW_DOT
+	
+	# set t0 to horiz length of this char in pixels + 1
+	addi	t0, x0, 6
 	j	DL_END
 DL_0:
 	# draw max 5x5 0
@@ -1812,21 +1905,27 @@ DL_0:
 	addi	a1, t3, 4
 	addi	a2, a0, 1
 	call	DRAW_HORIZ_LINE
+	
+	# set t0 to horiz length of this char in pixels + 1
+	addi	t0, x0, 5
 	j	DL_END
 DL_1:
 	# draw max 5x5 1
-	addi	a0, a0, 2
+	addi	a0, a0, 1
 	addi	a2, a1, 3
 	call	DRAW_VERT_LINE
 	
-	addi	a0, t2, 1
+	mv	a0, t2
 	addi	a1, t3, 4
 	addi	a2, a0, 2
 	call	DRAW_HORIZ_LINE
 	
-	addi	a0, t2, 1
+	mv	a0, t2
 	addi	a1, t3, 1
 	call	DRAW_DOT
+	
+	# set t0 to horiz length of this char in pixels + 1
+	addi	t0, x0, 4
 	j	DL_END
 DL_2:
 	# draw max 5x5 2
@@ -1854,6 +1953,9 @@ DL_2:
 	addi	a1, t3, 4
 	addi	a2, a0, 3
 	call	DRAW_HORIZ_LINE
+	
+	# set t0 to horiz length of this char in pixels + 1
+	addi	t0, x0, 5
 	j	DL_END
 DL_3:
 	# draw max 5x5 3
@@ -1885,6 +1987,9 @@ DL_3:
 	mv	a0, t2
 	addi	a1, t3, 3
 	call	DRAW_DOT
+	
+	# set t0 to horiz length of this char in pixels + 1
+	addi	t0, x0, 5
 	j	DL_END
 DL_4:
 	# draw max 5x5 4
@@ -1900,6 +2005,9 @@ DL_4:
 	addi	a1, t3, 2
 	addi	a2, a0, 2
 	call	DRAW_HORIZ_LINE
+	
+	# set t0 to horiz length of this char in pixels + 1
+	addi	t0, x0, 5
 	j	DL_END
 DL_5:
 	# draw max 5x5 5
@@ -1924,6 +2032,9 @@ DL_5:
 	addi	a1, t3, 4
 	addi	a2, a0, 2
 	call	DRAW_HORIZ_LINE
+	
+	# set t0 to horiz length of this char in pixels + 1
+	addi	t0, x0, 5
 	j	DL_END
 DL_6:
 	# draw max 5x5 6
@@ -1949,6 +2060,9 @@ DL_6:
 	addi	a1, t3, 4
 	addi	a2, a0, 1
 	call	DRAW_HORIZ_LINE
+	
+	# set t0 to horiz length of this char in pixels + 1
+	addi	t0, x0, 5
 	j	DL_END
 DL_7:
 	# draw max 5x5 7
@@ -1967,6 +2081,9 @@ DL_7:
 	addi	a1, t3, 3
 	addi	a2, a1, 1
 	call	DRAW_VERT_LINE
+	
+	# set t0 to horiz length of this char in pixels + 1
+	addi	t0, x0, 5
 	j	DL_END
 DL_8:
 	# draw max 5x5 8
@@ -1997,6 +2114,9 @@ DL_8:
 	addi	a1, t3, 4
 	addi	a2, a0, 1
 	call	DRAW_HORIZ_LINE
+	
+	# set t0 to horiz length of this char in pixels + 1
+	addi	t0, x0, 5
 	j	DL_END
 DL_9:
 	# draw max 5x5 9
@@ -2022,6 +2142,9 @@ DL_9:
 	addi	a1, t3, 4
 	addi	a2, a0, 1
 	call	DRAW_HORIZ_LINE
+	
+	# set t0 to horiz length of this char in pixels + 1
+	addi	t0, x0, 5
 	j	DL_END
 DL_UNKNOWN:
 	# draw 5x5 square for unimplemented ascii symbols
@@ -2042,11 +2165,13 @@ DL_UNKNOWN:
 	addi	a1, t3, 4
 	addi	a2, a0, 2
 	call	DRAW_HORIZ_LINE
+	
+	# set t0 to horiz length of this char in pixels + 1
+	addi	t0, x0, 6
 	j	DL_END
 DL_END:
 	# set arg registers to topleft of where next character would be
-	addi	a0, t2, L_SIZE
-	addi	a0, a0, 1
+	add	a0, t2, t0
 	mv	a1, t3
 	
 	lw	ra, 0(sp)
@@ -2149,7 +2274,7 @@ LD_TITLE_LOOP_2:
 	addi	t1, t1, 1
 	blt	t0, t2, LD_TITLE_LOOP_2
 	
-	# show punctuation
+	# show punctuation and unknown
 	addi	t1, x0, '.'
 	sb	t1, 0(t0)
 	addi	t1, x0, ','
@@ -2158,8 +2283,10 @@ LD_TITLE_LOOP_2:
 	sb	t1, 2(t0)
 	addi	t1, x0, '?'
 	sb	t1, 3(t0)
+	addi	t1, x0, 'a'		# for unknown char
+	sb	t1, 4(t0)
 
-	sb	x0, 4(t0)		# last character in array is intentionally left 0 as terminator
+	sb	x0, 5(t0)		# last character in array is intentionally left 0 as terminator
 	
 	# load menu string
 	la	t0, MENU_STR
