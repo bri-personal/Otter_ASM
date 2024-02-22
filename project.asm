@@ -77,8 +77,8 @@ PLAYER:	.space	18
 # 0: pixel offset x - horiz pixel dist from prev tile
 # 1: tile offset x - tile dist from left side of world (even offscreen) used to calculate offset of first tile shown in row
 # 2: pixel offset y - vert pixel dist from prev tile
-# 3: tile offset y - tile dist from top of world (even offscreen) used to calculate offset of first tile shown in row
-# NOTE: tile offsets stop increasing/decreasing when end/start of row in world is drawn, even if plaher continues moving right/left
+# 3: tile offset y - tile dist from top of world (even offscreen) used to calculate offset of first tile shown in column
+# NOTE: tile offsets stop increasing/decreasing when end/start of row in world is drawn, even if player continues moving right/left
 #	this is to prevent the offset of the first tile shown in the row from going to high/low since it is calculated as the diff btw tile offset and threshold
 OFFSET: .space 4
 
@@ -101,7 +101,7 @@ MENU_ARR:	.space 10
 
 # strings - each byte is a character
 # last byte must be 0 as terminator character
-TITLE_STR:	.space 27		# title text displayed on title screen
+TITLE_STR:	.space 42		# title text displayed on title screen
 MENU_STR:	.space 5		# title text displayed on menu screen
 PARTY_STR:	.space 6		# title text displayed on party screen
 BOXES_STR:	.space 6		# title text displayed for boxes on party screen
@@ -184,7 +184,6 @@ TITLE_PAGE:
 WORLD_START:
 	# fill background with tiles
         call	DRAW_WORLD		# fill background with tiles
-        
         call	READ_PLAYER		# read player pixels before drawing player for first time
 WORLD_UPDATE:
         call	DRAW_PLAYER		# draw player
@@ -1032,7 +1031,7 @@ DRAW_WORLD:
 	# check for player offset y too high
 	addi	t2, x0, T_PER_COL
 	addi	t2, t2, -T_COL_ON_S	# get diff between total tiles per row and tiles shown per row on screen
-	bge	t0, t2, DW_OFFSET_MAX_Y	#if diff is greater than that^, pointer offset is that^. start each col such that last tile in col on screen is last tile in col of world
+	bge	t0, t2, DW_OFFSET_MAX_Y	# if diff is greater than that^, pointer offset is that^. start each col such that last tile in col on screen is last tile in col of world
 	
 	# player offset y in appropriate range, add diff to pointer directly
 	slli	t0, t0, 2		# multiply offset by 4 to account for word addresses
@@ -1116,6 +1115,8 @@ DRAW_LETTER:
 	addi	t3, a1, 0		# y coord
 	
 	# check which letter it is
+	addi	t0, x0, ' '
+	beq	a2, t0, DL_END		# for space, just skip to next placment of char
 	addi	t0, x0, 'A'
 	beq	a2, t0, DL_A		# ascii 'A'
 	addi	t0, x0, 'B'
@@ -1168,9 +1169,37 @@ DRAW_LETTER:
 	beq 	a2, t0, DL_Y		# ascii 'Y'
 	addi	t0, x0, 'Z'
 	beq 	a2, t0, DL_Z		# ascii 'Z'
+	addi	t0, x0, '0'
+	beq 	a2, t0, DL_0		# ascii '0'
+	addi	t0, x0, '1'
+	beq 	a2, t0, DL_1		# ascii '1'
+	addi	t0, x0, '2'
+	beq 	a2, t0, DL_2		# ascii '2'
+	addi	t0, x0, '3'
+	beq 	a2, t0, DL_3		# ascii '3'
+	addi	t0, x0, '4'
+	beq 	a2, t0, DL_4		# ascii '4'
+	addi	t0, x0, '5'
+	beq 	a2, t0, DL_5		# ascii '5'
+	addi	t0, x0, '6'
+	beq 	a2, t0, DL_6		# ascii '6'
+	addi	t0, x0, '7'
+	beq 	a2, t0, DL_7		# ascii '7'
+	addi	t0, x0, '8'
+	beq 	a2, t0, DL_8		# ascii '8'
+	addi	t0, x0, '9'
+	beq 	a2, t0, DL_9		# ascii '9'
+	addi	t0, x0, '.'
+	beq	a2, t0, DL_PERIOD	# ascii '.'
+	addi	t0, x0, ','
+	beq	a2, t0, DL_COMMA	# ascii ','
+	addi	t0, x0, '!'
+	beq	a2, t0, DL_EXCLAM	# ascii '!'
+	addi	t0, x0, '?'
+	beq	a2, t0, DL_QUEST	# ascii '?'
 	j	DL_UNKNOWN		# unimplemented ascii
 DL_A:
-	# draw 5x5 A
+	# draw max 5x5 A
 	addi	a0, a0, 1
 	addi	a2, a0, 2
 	call	DRAW_HORIZ_LINE
@@ -1190,9 +1219,8 @@ DL_A:
 	addi	a2, a0, 2
 	call	DRAW_HORIZ_LINE
 	j	DL_END
-	
 DL_B:
-	# draw 5x5 B
+	# draw max 5x5 B
 	addi	a2, a1, 4
 	call	DRAW_VERT_LINE
 	
@@ -1219,9 +1247,8 @@ DL_B:
 	addi	a1, t3, 3
 	call	DRAW_DOT
 	j	DL_END
-	
 DL_C:
-	# draw 5x5 C
+	# draw max 5x5 C
 	addi	a1, a1, 1
 	addi	a2, a1, 2
 	call	DRAW_VERT_LINE
@@ -1243,9 +1270,8 @@ DL_C:
 	addi	a1, t3, 3
 	call	DRAW_DOT
 	j	DL_END
-	
 DL_D:
-	# draw 5x5 D
+	# draw max 5x5 D
 	addi	a2, a1, 4
 	call	DRAW_VERT_LINE
 	
@@ -1264,9 +1290,8 @@ DL_D:
 	addi	a2, a1, 2
 	call	DRAW_VERT_LINE
 	j	DL_END
-	
 DL_E:
-	# draw 5x5 E
+	# draw max 5x5 E
 	addi	a2, a1, 4
 	call	DRAW_VERT_LINE
 	
@@ -1285,9 +1310,8 @@ DL_E:
 	addi	a2, a0, 3
 	call	DRAW_HORIZ_LINE
 	j	DL_END
-	
 DL_F:
-	# draw 5x5 F
+	# draw max 5x5 F
 	addi	a2, a1, 4
 	call	DRAW_VERT_LINE
 	
@@ -1301,9 +1325,8 @@ DL_F:
 	addi	a2, a0, 2
 	call	DRAW_HORIZ_LINE
 	j	DL_END
-	
-DL_G:		
-	# draw 5x5 G
+DL_G:	
+	# draw max 5x5 G
 	addi	a0, a0, 1
 	addi	a2, a0, 2
 	call	DRAW_HORIZ_LINE
@@ -1327,12 +1350,23 @@ DL_G:
 	addi	a1, t3, 2
 	call	DRAW_DOT	
 	j DL_END
-	
 DL_H:
-	j	DL_UNKNOWN
+	# draw max 5x5 H
+	addi	a2, a1, 4
+	call	DRAW_VERT_LINE
 	
+	addi	a0, t2, 1
+	addi	a1, t3, 2
+	addi	a2, a0, 2
+	call	DRAW_HORIZ_LINE
+	
+	addi	a0, t2, 4
+	mv	a1, t3
+	addi	a2, a1, 4
+	call	DRAW_VERT_LINE
+	j	DL_END
 DL_I:
-	# draw 5x5 I
+	# draw max 5x5 I
 	addi	a0, a0, 1
 	addi	a2, a0, 2
 	call	DRAW_HORIZ_LINE
@@ -1347,15 +1381,53 @@ DL_I:
 	addi	a2, a0, 2
 	call	DRAW_HORIZ_LINE
 	j	DL_END
-	
 DL_J:
-	j	DL_UNKNOWN
+	# draw max 5x5 J
+	addi	a0, a0, 1
+	addi	a2, a0, 3
+	call	DRAW_HORIZ_LINE
 	
+	addi	a0, t2, 3
+	mv	a1, t3
+	addi	a2, a1, 3
+	call	DRAW_VERT_LINE
+	
+	addi	a0, t2, 1
+	addi	a1, t3, 4
+	addi	a2, a0, 1
+	call	DRAW_HORIZ_LINE
+	
+	addi	a0, t2, 0
+	addi	a1, t3, 3
+	call	DRAW_DOT
+	j	DL_END
 DL_K:
-	j	DL_UNKNOWN
+	# draw max 5x5 K
+	addi	a2, a1, 4
+	call	DRAW_VERT_LINE
 	
+	addi	a0, t2, 1
+	addi	a1, t3, 2
+	call	DRAW_DOT
+	
+	addi	a0, t2, 2
+	addi	a1, t3, 1
+	call	DRAW_DOT
+	
+	addi	a0, t2, 3
+	mv	a1, t3
+	call	DRAW_DOT
+	
+	addi	a0, t2, 2
+	addi	a1, t3, 3
+	call	DRAW_DOT
+	
+	addi	a0, t2, 3
+	addi	a1, t3, 4
+	call	DRAW_DOT
+	j	DL_END
 DL_L:
-	# draw 5x5 L
+	# draw max 5x5 L
 	addi	a2, a1, 4
 	call	DRAW_VERT_LINE
 	
@@ -1364,9 +1436,8 @@ DL_L:
 	addi	a2, a0, 2
 	call	DRAW_HORIZ_LINE
 	j	DL_END
-	
 DL_M:
-	# draw 5x5 M
+	# draw max 5x5 M
 	addi	a2, a1, 4
 	call	DRAW_VERT_LINE
 	
@@ -1387,9 +1458,8 @@ DL_M:
 	addi	a2, a1, 4
 	call	DRAW_VERT_LINE
 	j	DL_END
-	
 DL_N:
-	# draw 5x5 N
+	# draw max 5x5 N
 	addi	a2, a1, 4
 	call	DRAW_VERT_LINE
 	
@@ -1410,9 +1480,8 @@ DL_N:
 	addi	a2, a1, 4
 	call	DRAW_VERT_LINE
 	j	DL_END
-	
 DL_O:
-	# draw 5x5 O
+	# draw max 5x5 O
 	addi	a1, a1, 1
 	addi	a2, a1, 2
 	call	DRAW_VERT_LINE
@@ -1432,9 +1501,8 @@ DL_O:
 	addi	a2, a0, 2
 	call	DRAW_HORIZ_LINE
 	j	DL_END
-	
 DL_P:
-	# draw 5x5 P
+	# draw max 5x5 P
 	addi	a2, a1, 4
 	call	DRAW_VERT_LINE
 	
@@ -1454,16 +1522,84 @@ DL_P:
 	j	DL_END
 	
 DL_Q:
-	j	DL_UNKNOWN
+	# draw 5x5 Q
+	addi	a1, a1, 1
+	addi	a2, a1, 2
+	call	DRAW_VERT_LINE
 	
+	addi	a0, t2, 1
+	mv	a1, t3
+	addi	a2, a0, 2
+	call	DRAW_HORIZ_LINE
+	
+	addi	a0, t2, 4
+	addi	a1, t3, 1
+	addi	a2, a1, 1
+	call	DRAW_VERT_LINE
+	
+	addi	a0, t2, 1
+	addi	a1, t3, 4
+	addi	a2, a0, 1
+	call	DRAW_HORIZ_LINE
+	
+	addi	a0, t2, 3
+	addi	a1, t3, 3
+	call	DRAW_DOT
+	
+	addi	a0, t2, 4
+	addi	a1, t3, 4
+	call	DRAW_DOT
+	j	DL_END
 DL_R:
-	j	DL_UNKNOWN
+	# draw max 5x5 R
+	addi	a2, a1, 4
+	call	DRAW_VERT_LINE
 	
+	addi	a0, t2, 1
+	mv	a1, t3
+	addi	a2, a0, 2
+	call	DRAW_HORIZ_LINE
+	
+	addi	a0, t2, 1
+	addi	a1, t3, 2
+	addi	a2, a0, 2
+	call	DRAW_HORIZ_LINE
+	
+	addi	a0, t2, 4
+	addi	a1, t3, 1
+	call	DRAW_DOT
+	
+	addi	a0, t2, 4
+	addi	a1, t3, 3
+	addi	a2, a1, 1
+	call	DRAW_VERT_LINE
+	j	DL_END
 DL_S:
-	j	DL_UNKNOWN
+	# draw max 5x5 S
+	addi	a0, t2, 1
+	addi	a2, a0, 3
+	call	DRAW_HORIZ_LINE
 	
+	mv	a0, t2
+	addi	a1, t3, 1
+	call	DRAW_DOT
+	
+	addi	a0, t2, 1
+	addi	a1, t3, 2
+	addi	a2, a0, 2
+	call	DRAW_HORIZ_LINE
+	
+	addi	a0, t2, 4
+	addi	a1, t3, 3
+	call	DRAW_DOT
+	
+	mv	a0, t2
+	addi	a1, t3, 4
+	addi	a2, a0, 3
+	call	DRAW_HORIZ_LINE
+	j	DL_END
 DL_T:
-	# draw 5x5 T
+	# draw max 5x5 T
 	addi	a2, a0, 4
 	call	DRAW_HORIZ_LINE
 	
@@ -1472,9 +1608,8 @@ DL_T:
 	addi	a2, a1, 3
 	call	DRAW_VERT_LINE
 	j	DL_END
-	
 DL_U:
-	# draw 5x5 U
+	# draw max 5x5 U
 	addi	a2, a1, 3
 	call	DRAW_VERT_LINE
 	
@@ -1488,24 +1623,408 @@ DL_U:
 	addi	a2, a1, 3
 	call	DRAW_VERT_LINE
 	j	DL_END
-	
 DL_V:
-	j	DL_UNKNOWN
+	# draw max 5x5 V
+	addi	a2, a1, 1
+	call	DRAW_VERT_LINE
 	
+	addi	a0, t2, 1
+	addi	a1, t3, 2
+	addi	a2, a1, 1
+	call	DRAW_VERT_LINE
+	
+	addi	a0, t2, 2
+	addi	a1, t3, 4
+	call	DRAW_DOT
+	
+	addi	a0, t2, 4
+	mv	a1, t3
+	addi	a2, a1, 1
+	call	DRAW_VERT_LINE
+	
+	addi	a0, t2, 3
+	addi	a1, t3, 2
+	addi	a2, a1, 1
+	call	DRAW_VERT_LINE
+	j	DL_END
 DL_W:
-	j	DL_UNKNOWN
+	# draw max 5x5 W
+	addi	a2, a1, 4
+	call	DRAW_VERT_LINE
 	
+	addi	a0, t2, 1
+	addi	a1, t3, 3
+	call	DRAW_DOT
+	
+	addi	a0, t2, 2
+	addi	a1, t3, 2
+	call	DRAW_DOT
+	
+	addi	a0, t2, 3
+	addi	a1, t3, 3
+	call	DRAW_DOT
+	
+	addi	a0, t2, 4
+	mv	a1, t3
+	addi	a2, a1, 4
+	call	DRAW_VERT_LINE
+	j	DL_END
 DL_X:
-	j	DL_UNKNOWN
+	# draw max 5x5 X
+	call	DRAW_DOT
 	
+	addi 	a0, a0, 1
+	addi	a1, a1, 1
+	call	DRAW_DOT
+	
+	addi 	a0, a0, 1
+	addi	a1, a1, 1
+	call	DRAW_DOT
+	
+	addi 	a0, a0, 1
+	addi	a1, a1, 1
+	call	DRAW_DOT
+	
+	addi 	a0, a0, 1
+	addi	a1, a1, 1
+	call	DRAW_DOT
+	
+	addi 	a0, t2, 3
+	addi	a1, t3, 1
+	call	DRAW_DOT
+	
+	addi 	a0, t2, 4
+	addi	a1, t3, 0
+	call	DRAW_DOT
+	
+	addi 	a0, t2, 1
+	addi	a1, t3, 3
+	call	DRAW_DOT
+	
+	addi 	a0, t2, 0
+	addi	a1, t3, 4
+	call	DRAW_DOT
+	j	DL_END
 DL_Y:
-	j	DL_UNKNOWN
+	# draw max 5x5 Y
+	call	DRAW_DOT
 	
+	addi 	a0, a0, 1
+	addi	a1, a1, 1
+	call	DRAW_DOT
+	
+	addi 	a0, t2, 3
+	addi	a1, t3, 1
+	call	DRAW_DOT
+	
+	addi 	a0, t2, 4
+	addi	a1, t3, 0
+	call	DRAW_DOT
+	
+	addi	a0, t2, 2
+	addi	a1, t3, 2
+	addi	a2, a1, 2
+	call	DRAW_VERT_LINE
+	j	DL_END
 DL_Z:
-	j	DL_UNKNOWN
+	# draw max 5x5 Z
+	addi	a2, a0, 4
+	call	DRAW_HORIZ_LINE
 	
+	addi	a0, t2, 3
+	addi	a1, t3, 1
+	call	DRAW_DOT
+	
+	addi	a0, t2, 2
+	addi	a1, t3, 2
+	call	DRAW_DOT
+	
+	addi	a0, t2, 1
+	addi	a1, t3, 3
+	call	DRAW_DOT
+	
+	mv	a0, t2
+	addi	a1, t3, 4
+	addi	a2, a0, 4
+	call	DRAW_HORIZ_LINE
+	j	DL_END
+DL_PERIOD:
+	# draw max 5x5 .
+	addi	a1, a1, 4
+	call	DRAW_DOT
+	j	DL_END
+DL_COMMA:
+	# draw max 5x5 ,
+	addi	a1, a1, 4
+	call	DRAW_DOT
+	addi	a0, t2, 1
+	addi	a1, t3, 3
+	call	DRAW_DOT
+	j	DL_END
+DL_EXCLAM:
+	# draw max 5x5 !
+	addi	a2, a1, 2
+	call	DRAW_VERT_LINE
+	
+	addi	a1, t3, 4
+	call	DRAW_DOT
+	j	DL_END
+DL_QUEST:
+	# draw max 5x5 ?
+	addi	a1, a1, 1
+	call	DRAW_DOT
+	
+	addi	a0, t2, 1
+	mv	a1, t3
+	addi	a2, a0, 2
+	call	DRAW_HORIZ_LINE
+	
+	addi	a0, t2, 4
+	addi	a1, t3, 1
+	call	DRAW_DOT
+	
+	addi	a0, t2, 2
+	addi	a1, t3, 2
+	addi	a2, a0, 1
+	call	DRAW_HORIZ_LINE
+	
+	addi	a0, t2, 2
+	addi	a1, t3, 4
+	call	DRAW_DOT
+	j	DL_END
+DL_0:
+	# draw max 5x5 0
+	addi	a0, a0, 1
+	addi	a2, a0, 1
+	call	DRAW_HORIZ_LINE
+	
+	mv	a0, t2
+	addi	a1, t3, 1
+	addi	a2, a1, 2
+	call	DRAW_VERT_LINE
+	
+	addi	a0, t2, 3
+	addi	a1, t3, 1
+	addi	a2, a1, 2
+	call	DRAW_VERT_LINE
+	
+	addi	a0, t2, 1
+	addi	a1, t3, 4
+	addi	a2, a0, 1
+	call	DRAW_HORIZ_LINE
+	j	DL_END
+DL_1:
+	# draw max 5x5 1
+	addi	a0, a0, 2
+	addi	a2, a1, 3
+	call	DRAW_VERT_LINE
+	
+	addi	a0, t2, 1
+	addi	a1, t3, 4
+	addi	a2, a0, 2
+	call	DRAW_HORIZ_LINE
+	
+	addi	a0, t2, 1
+	addi	a1, t3, 1
+	call	DRAW_DOT
+	j	DL_END
+DL_2:
+	# draw max 5x5 2
+	addi	a1, a1, 1
+	call	DRAW_DOT
+	
+	addi	a0, t2, 1
+	mv	a1, t3
+	addi	a2, a0, 1
+	call	DRAW_HORIZ_LINE
+	
+	addi	a0, t2, 3
+	addi	a1, t3, 1
+	call	DRAW_DOT
+	
+	addi	a0, t2, 2
+	addi	a1, t3, 2
+	call	DRAW_DOT
+	
+	addi	a0, t2, 1
+	addi	a1, t3, 3
+	call	DRAW_DOT
+	
+	mv 	a0, t2
+	addi	a1, t3, 4
+	addi	a2, a0, 3
+	call	DRAW_HORIZ_LINE
+	j	DL_END
+DL_3:
+	# draw max 5x5 3
+	addi	a1, a1, 1
+	call	DRAW_DOT
+
+	addi	a0, t2, 1
+	mv	a1, t3
+	addi	a2, a0, 1
+	call	DRAW_HORIZ_LINE
+	
+	addi	a0, t2, 3
+	addi	a1, t3, 1
+	call	DRAW_DOT
+	
+	addi	a0, t2, 2
+	addi	a1, t3, 2
+	call	DRAW_DOT
+	
+	addi	a0, t2, 3
+	addi	a1, t3, 3
+	call	DRAW_DOT
+	
+	addi	a0, t2, 1
+	addi	a1, t3, 4
+	addi	a2, a0, 1
+	call	DRAW_HORIZ_LINE
+	
+	mv	a0, t2
+	addi	a1, t3, 3
+	call	DRAW_DOT
+	j	DL_END
+DL_4:
+	# draw max 5x5 4
+	addi	a2, a1, 1
+	call	DRAW_VERT_LINE
+	
+	addi	a0, t2, 3
+	mv	a1, t3
+	addi	a2, a1, 4
+	call	DRAW_VERT_LINE
+	
+	mv	a0, t2
+	addi	a1, t3, 2
+	addi	a2, a0, 2
+	call	DRAW_HORIZ_LINE
+	j	DL_END
+DL_5:
+	# draw max 5x5 5
+	addi	a2, a0, 3
+	call	DRAW_HORIZ_LINE
+	
+	mv	a0, t2
+	addi	a1, t3, 1
+	addi	a2, a1, 1
+	call	DRAW_VERT_LINE
+	
+	addi	a0, t2, 1
+	addi	a1, t3, 2
+	addi	a2, a0, 1
+	call	DRAW_HORIZ_LINE
+	
+	addi	a0, t2, 3
+	addi	a1, t3, 3
+	call	DRAW_DOT
+	
+	mv	a0, t2
+	addi	a1, t3, 4
+	addi	a2, a0, 2
+	call	DRAW_HORIZ_LINE
+	j	DL_END
+DL_6:
+	# draw max 5x5 6
+	addi	a0, a0, 1
+	addi	a2, a0, 1
+	call	DRAW_HORIZ_LINE
+	
+	mv	a0, t2
+	addi	a1, t3, 1
+	addi	a2, a1, 2
+	call	DRAW_VERT_LINE
+	
+	addi	a0, t2, 1
+	addi	a1, t3, 2
+	addi	a2, a0, 1
+	call	DRAW_HORIZ_LINE
+	
+	addi	a0, t2, 3
+	addi	a1, t3, 3
+	call	DRAW_DOT
+	
+	addi	a0, t2, 1
+	addi	a1, t3, 4
+	addi	a2, a0, 1
+	call	DRAW_HORIZ_LINE
+	j	DL_END
+DL_7:
+	# draw max 5x5 7
+	addi	a2, a0, 3
+	call	DRAW_HORIZ_LINE
+	
+	addi	a0, t2, 3
+	addi	a1, t3, 1
+	call	DRAW_DOT
+	
+	addi	a0, t2, 2
+	addi	a1, t3, 2
+	call	DRAW_DOT
+	
+	addi	a0, t2, 1
+	addi	a1, t3, 3
+	addi	a2, a1, 1
+	call	DRAW_VERT_LINE
+	j	DL_END
+DL_8:
+	# draw max 5x5 8
+	addi	a0, a0, 1
+	addi	a2, a0, 1
+	call	DRAW_HORIZ_LINE
+	
+	mv	a0, t2
+	addi	a1, t3, 1
+	call	DRAW_DOT
+	
+	addi	a0, t2, 3
+	call	DRAW_DOT
+	
+	addi	a0, t2, 1
+	addi	a1, t3, 2
+	addi	a2, a0, 1
+	call	DRAW_HORIZ_LINE
+	
+	mv	a0, t2
+	addi	a1, t3, 3
+	call	DRAW_DOT
+	
+	addi	a0, t2, 3
+	call	DRAW_DOT
+	
+	addi	a0, t2, 1
+	addi	a1, t3, 4
+	addi	a2, a0, 1
+	call	DRAW_HORIZ_LINE
+	j	DL_END
+DL_9:
+	# draw max 5x5 9
+	addi	a0, a0, 1
+	addi	a2, a0, 1
+	call	DRAW_HORIZ_LINE
+	
+	mv	a0, t2
+	addi	a1, t3, 1
+	call	DRAW_DOT
+	
+	addi	a0, t2, 1
+	addi	a1, t3, 2
+	addi	a2, a0, 1
+	call	DRAW_HORIZ_LINE
+	
+	addi	a0, t2, 3
+	addi	a1, t3, 1
+	addi	a2, a1, 2
+	call	DRAW_VERT_LINE
+	
+	addi	a0, t2, 1
+	addi	a1, t3, 4
+	addi	a2, a0, 1
+	call	DRAW_HORIZ_LINE
+	j	DL_END
 DL_UNKNOWN:
-	# draw 5x5 square
+	# draw 5x5 square for unimplemented ascii symbols
 	addi	a2, a1, 4
 	call	DRAW_VERT_LINE
 	
@@ -1524,9 +2043,8 @@ DL_UNKNOWN:
 	addi	a2, a0, 2
 	call	DRAW_HORIZ_LINE
 	j	DL_END
-	
 DL_END:
-	# restore original coords to arg registers
+	# set arg registers to topleft of where next character would be
 	addi	a0, t2, L_SIZE
 	addi	a0, a0, 1
 	mv	a1, t3
@@ -1608,6 +2126,8 @@ LOAD_DATA:
 	
 	# load title string
 	la	t0, TITLE_STR
+	
+	# show all letters
 	addi	t1, x0, 'A'
 	addi	t2, t0, 26
 LD_TITLE_LOOP:
@@ -1615,7 +2135,31 @@ LD_TITLE_LOOP:
 	addi	t0, t0, 1
 	addi	t1, t1, 1
 	blt	t0, t2, LD_TITLE_LOOP
-	sb	x0, 0(t0)		# last character in array is intentionally left 0 as terminator
+	
+	addi	t1, x0, ' '
+	sb	t1, 0(t0)
+	addi	t0, t0, 1
+	
+	# show all numbers
+	addi	t2, t0, 10
+	addi	t1, x0, '0'
+LD_TITLE_LOOP_2:
+	sb	t1, 0(t0)
+	addi	t0, t0, 1
+	addi	t1, t1, 1
+	blt	t0, t2, LD_TITLE_LOOP_2
+	
+	# show punctuation
+	addi	t1, x0, '.'
+	sb	t1, 0(t0)
+	addi	t1, x0, ','
+	sb	t1, 1(t0)
+	addi	t1, x0, '!'
+	sb	t1, 2(t0)
+	addi	t1, x0, '?'
+	sb	t1, 3(t0)
+
+	sb	x0, 4(t0)		# last character in array is intentionally left 0 as terminator
 	
 	# load menu string
 	la	t0, MENU_STR
