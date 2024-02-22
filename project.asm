@@ -31,7 +31,7 @@
 # party quantities
 .eqv	PARTY_SIZE	6	# number of members of party/number of rects to be drawn
 .eqv	PARTY_RECT_W	30	# width of party rectangles
-.eqv	PARTY_RECT_H	6	# height of party rectangles
+.eqv	PARTY_RECT_H	7	# height of party rectangles
 
 # menu quantities
 # MUST have 2 rows of equal number of squares and size must WIDTH / MENU_NUM_SQ
@@ -715,9 +715,10 @@ PARTY_START:
 	addi	a3, x0, RED
 	call	DRAW_BG
 	
-	# draw menu title text
+	# draw party title text
 	addi	a0, x0, L_SIZE		# set initial x
-	addi	a1, x0, L_SIZE		# set initial y
+	addi	a0, a0, -2		# "
+	addi	a1, x0, 1		# set initial y
 	addi	a3, x0, WHITE		# set color
 	la	a2, PARTY_STR		# get string address
 	call	DRAW_STRING
@@ -726,13 +727,15 @@ PARTY_START:
 	addi	a0, x0, WIDTH		# set initial x
 	srli	a0, a0, 1		# "
 	addi	a0, a0, L_SIZE		# "
-	addi	a1, x0, L_SIZE		# set initial y
+	addi	a0, a0, -2		# "
+	addi	a1, x0, 1		# set initial y
 	la	a2, BOXES_STR		# get string address
 	call	DRAW_STRING
 	
 	# draw line
 	addi	a0, x0, WIDTH		# set initial x
 	srli	a0, a0, 1		# "
+	addi	a0, a0, -2		# "
 	addi	a1, x0, 2		# set initial y
 	addi	a2, x0, HEIGHT
 	addi	a2, a2, -2
@@ -742,9 +745,9 @@ PARTY_UPDATE:
 	
 	# draw rectangles for each member of party
 	addi	a0, x0, L_SIZE		# set initial x
+	addi	a0, a0, -2		# "
 	addi	a1, x0, L_SIZE		# set initial y
-	slli	a1, a1, 1		# "
-	addi	a1, a1, 1		# "
+	addi	a1, a1, 2		# "
 P_DRAW_LOOP:
 	addi	a3, x0, WHITE		# set color of rect
 	addi	a2, a0, PARTY_RECT_W	# get other corner of rect
@@ -759,10 +762,10 @@ P_DRAW_LOOP:
 	addi	a0, x0, WIDTH		# set initial x
 	srli	a0, a0, 1		# "
 	addi	a0, a0, L_SIZE		# "
+	addi	a0, a0, -2		# "
 	mv	t4, a0			# save this initial x for drawing later
 	addi	a1, x0, L_SIZE		# set initial y
-	slli	a1, a1, 1		# "
-	addi	a1, a1, 1		# "
+	addi	a1, a1, 2		# "
 P_B_DRAW_LOOP:
 	addi	a3, x0, WHITE		# set color of rect
 	addi	a2, a0, PARTY_RECT_H	# get other corner of rect
