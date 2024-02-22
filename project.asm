@@ -823,7 +823,7 @@ DRAW_PLAYER:
 	addi	t5, x0, 1
 	beq	t2, t5, DP_OR_UP	# player orientation up
 	addi	t5, t5, 1
-	beq	t2, t5, DP_OR_LEFT		# player orientation left
+	beq	t2, t5, DP_OR_LEFT	# player orientation left
 	addi	t5, t5, 1
 	beq	t2, t5, DP_OR_RIGHT	# player orientation right
 DP_OR_DOWN:
@@ -879,7 +879,6 @@ DP_OR_UP:
 	addi	a3, x0, WHITE
 	call	DRAW_HORIZ_LINE
 	j	DP_OR_END
-	
 DP_OR_LEFT:
 	#draw face
 	lb	a0, 0(t3)		# player x coord
@@ -954,7 +953,6 @@ DP_OR_RIGHT:
 	addi	a3, x0, RED
 	call	DRAW_DOT
 	j	DP_OR_END
-	
 DP_OR_END:
 	lw	ra, 0(sp)
 	addi	sp, sp, 4
