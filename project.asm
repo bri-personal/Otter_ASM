@@ -722,6 +722,8 @@ M_MOVE_END:
 
 # party page shows what is in party and reserves
 PARTY_START:
+	mv	s2, x0			# set bit flag for if in party list (0) or boxes list (-1)
+
 	addi	a3, x0, RED
 	call	DRAW_BG
 	
@@ -761,11 +763,12 @@ PARTY_UPDATE:
 	addi	a1, x0, L_SIZE		# set initial y
 	addi	a1, a1, 2		# "
 P_DRAW_LOOP:
-	beq	t3, t4, P_DRAW_L_CURR	# set color based on index
-	addi	a3, x0, WHITE		# set color of rect to WHITE for not selected
+	bnez	s2, P_DRAW_L_UNSEL	# if in boxes list (not party), don't color party boxes
+	bne	t3, t4, P_DRAW_L_UNSEL	# set color based on index
+	addi	a3, x0, M_SEL_COLOR	# set color of rect to WHITE for not selected
 	j	P_DRAW_L_CONT
-P_DRAW_L_CURR:
-	addi	a3, x0, M_SEL_COLOR	# set color of rect to BLUE for selected
+P_DRAW_L_UNSEL:
+	addi	a3, x0, WHITE	# set color of rect to BLUE for selected
 P_DRAW_L_CONT:
 	addi	a2, a0, PARTY_RECT_W	# get other corner of rect
 	addi	a4, a1, PARTY_RECT_H	# "
@@ -812,6 +815,10 @@ PARTY_PAGE:
 	beq	t0, t1, PARTY_MOVE_DOWN	# if key pressed was S, move party selection down
 	addi	t1, x0, W_CODE
 	beq	t0, t1, PARTY_MOVE_UP	# if key pressed was W, move party selection up
+	addi	t1, x0, D_CODE
+	beq	t0, t1, PARTY_MOVE_R	# if key pressed was W, move party selection up
+	addi	t1, x0, A_CODE
+	beq	t0, t1, PARTY_MOVE_L	# if key pressed was W, move party selection up
 	addi	t1, x0, SPACE_CODE
 	beq	t0, t1, MENU_START	# if key pressed was space, go to menu page
 	j	PARTY_PAGE
@@ -831,6 +838,14 @@ PARTY_MOVE_UP:
 	addi	t2, x0, PARTY_SIZE
 	ble	t1, t2, PARTY_MOVE_END	# index still <= PARTY_SIZE - skip
 	addi	t1, x0, 1		# index too low - set back to party size for first index
+	j	PARTY_MOVE_END
+PARTY_MOVE_R:
+	bnez	s2, PARTY_MOVE_END	# already in boxes (CHANGE LATER TO MOVE RIGHT)
+	addi	s2, x0, 1		# set flag to be in boxes
+	j	PARTY_MOVE_END
+PARTY_MOVE_L:
+	beqz	s2, PARTY_MOVE_END	# already in boxes (CHANGE LATER TO MOVE RIGHT)
+	mv	s2, x0			# set flag to be in party
 	j	PARTY_MOVE_END
 PARTY_MOVE_END:
 	sb	t1, 0(t0)		# store new index
