@@ -71,7 +71,7 @@
 # 1: y coord of top of rectange
 # 2: orientation (0=down, 1=up, 2=left, 3=right)
 # 3-17: pixels behind it that can be redrawn after. amount of bytes must equal P_AREA (P_WIDTH*P_HEIGHT)
-PLAYER:	.space	18
+PLAYER:		.space	18
 
 # player offset data
 # 0: pixel offset x - horiz pixel dist from prev tile
@@ -80,7 +80,7 @@ PLAYER:	.space	18
 # 3: tile offset y - tile dist from top of world (even offscreen) used to calculate offset of first tile shown in column
 # NOTE: tile offsets stop increasing/decreasing when end/start of row in world is drawn, even if player continues moving right/left
 #	this is to prevent the offset of the first tile shown in the row from going to high/low since it is calculated as the diff btw tile offset and threshold
-OFFSET: .space 4
+OFFSET:		.space 4
 
 # world tiles data:
 # tiles array is array of addresses to fist tile in each row in ALL_TILES
@@ -91,13 +91,18 @@ TILES_ARR:	.space 80
 # 0 - empty
 # 1 - wall
 # 2 - red (also empty)
-ALL_TILES: .space NUM_TILES
+ALL_TILES:	.space NUM_TILES
 
 # menu selection index (2 bytes) and button colors (number of bytes for number of buttons)
 # 0 - currently selected index
 # 1 - prev selected index
 # 2-9 - colors of buttons
 MENU_ARR:	.space 10
+
+# party selection index (1 byte)
+# 0 - currently selected index
+# indices range from PARTY_SIZE (first) to 1 (last)
+PARTY_IND:	.space 1
 
 # strings - each byte is a character
 # last byte must be 0 as terminator character
@@ -132,6 +137,11 @@ MAIN:
         sb	x0, 0(t0)		# store 0 to index
         addi	t1, x0, -1
         sb	t1, 1(t0)		# store -1 to prev index
+        
+        # initialize party index
+        la 	t0, PARTY_IND		# load party index address
+        addi	t1, x0, PARTY_SIZE
+        sb	t1, 0(t0)		# store PARTY_SIZE to current index
         
         # init tiles array
         la	t0, ALL_TILES		# get all tiles address
@@ -742,6 +752,8 @@ PARTY_START:
 	call	DRAW_VERT_LINE
 PARTY_UPDATE:
 	addi	t3, x0, PARTY_SIZE	# counter for drawing rects
+	la	t4, PARTY_IND		
+	lb	t4, 0(t4)		# get current selection index
 	
 	# draw rectangles for each member of party
 	addi	a0, x0, L_SIZE		# set initial x
@@ -749,7 +761,12 @@ PARTY_UPDATE:
 	addi	a1, x0, L_SIZE		# set initial y
 	addi	a1, a1, 2		# "
 P_DRAW_LOOP:
-	addi	a3, x0, WHITE		# set color of rect
+	beq	t3, t4, P_DRAW_L_CURR	# set color based on index
+	addi	a3, x0, WHITE		# set color of rect to WHITE for not selected
+	j	P_DRAW_L_CONT
+P_DRAW_L_CURR:
+	addi	a3, x0, M_SEL_COLOR	# set color of rect to BLUE for selected
+P_DRAW_L_CONT:
 	addi	a2, a0, PARTY_RECT_W	# get other corner of rect
 	addi	a4, a1, PARTY_RECT_H	# "
 	call	DRAW_RECT		# draw rect
@@ -791,9 +808,33 @@ PARTY_PAGE:
 	addi	s1, x0, 0		# clear interrupt flag
 	
 	lw	t0, 0x100(s0)		# read keyboard input
+	addi	t1, x0, S_CODE
+	beq	t0, t1, PARTY_MOVE_DOWN	# if key pressed was S, move party selection down
+	addi	t1, x0, W_CODE
+	beq	t0, t1, PARTY_MOVE_UP	# if key pressed was W, move party selection up
 	addi	t1, x0, SPACE_CODE
 	beq	t0, t1, MENU_START	# if key pressed was space, go to menu page
 	j	PARTY_PAGE
+PARTY_MOVE_DOWN:
+	la	t0, PARTY_IND		# get party index address
+	lb	t1, 0(t0)		# get party index
+	addi	t1, t1, -1		# move index down (decrease by 1)
+	# check for overflow
+	bgtz	t1, PARTY_MOVE_END	# index still >0 - skip
+	addi	t1, x0, PARTY_SIZE	# index too low - set back to party size for first index
+	j	PARTY_MOVE_END
+PARTY_MOVE_UP:
+	la	t0, PARTY_IND		# get party index address
+	lb	t1, 0(t0)		# get party index
+	addi	t1, t1, 1		# move index down (decrease by 1)
+	# check for overflow
+	addi	t2, x0, PARTY_SIZE
+	ble	t1, t2, PARTY_MOVE_END	# index still <= PARTY_SIZE - skip
+	addi	t1, x0, 1		# index too low - set back to party size for first index
+	j	PARTY_MOVE_END
+PARTY_MOVE_END:
+	sb	t1, 0(t0)		# store new index
+	j	PARTY_UPDATE
 	
                 
 # interrupt service routine
