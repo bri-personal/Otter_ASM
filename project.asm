@@ -29,9 +29,10 @@
 .eqv	L_SIZE	5		# width and height of letters
 
 # party quantities
-.eqv	PARTY_SIZE	6	# number of members of party/number of rects to be drawn
+.eqv	PARTY_SIZE	6	# number of members of party/number of rects to be drawn. MUST BE MAX 2047 FOR BITMASKING
 .eqv	PARTY_RECT_W	30	# width of party rectangles
 .eqv	PARTY_RECT_H	7	# height of party rectangles
+.eqv	BOXES_COLS	4	# number of columns in boxes. MUST BE MAX 2047 FOR BITMASKING. rows set by PARTY_SIZE
 
 # menu quantities
 # MUST have 2 rows of equal number of squares and size must WIDTH / MENU_NUM_SQ
@@ -99,11 +100,6 @@ ALL_TILES:	.space NUM_TILES
 # 2-9 - colors of buttons
 MENU_ARR:	.space 10
 
-# party selection index (1 byte)
-# 0 - currently selected index
-# indices range from PARTY_SIZE (first) to 1 (last)
-PARTY_IND:	.space 1
-
 # strings - each byte is a character
 # last byte must be 0 as terminator character
 TITLE_STR:	.space 43		# title text displayed on title screen
@@ -137,11 +133,6 @@ MAIN:
         sb	x0, 0(t0)		# store 0 to index
         addi	t1, x0, -1
         sb	t1, 1(t0)		# store -1 to prev index
-        
-        # initialize party index
-        la 	t0, PARTY_IND		# load party index address
-        addi	t1, x0, PARTY_SIZE
-        sb	t1, 0(t0)		# store PARTY_SIZE to current index
         
         # init tiles array
         la	t0, ALL_TILES		# get all tiles address
@@ -722,7 +713,13 @@ M_MOVE_END:
 
 # party page shows what is in party and reserves
 PARTY_START:
-	mv	s2, x0			# set bit flag for if in party list (0) or boxes list (-1)
+	mv	t5, x0			# set bit flag for if in party list (0) or boxes list (1)
+	addi	t6, x0, BOXES_COLS	# set row and column indices for boxes in t6
+	slli	t6, t6, 16		# MSB halfword is column index
+	addi	t6, t6, PARTY_SIZE	# LSB halfword is row index (also used for party list)
+	# row index ranges from PARTY_SIZE (first) to 1 (last)
+	# column index ranges from BOXES_COLS (first) to 1 (last)
+	sh	t6, 0x40(s0)
 
 	addi	a3, x0, RED
 	call	DRAW_BG
@@ -754,8 +751,6 @@ PARTY_START:
 	call	DRAW_VERT_LINE
 PARTY_UPDATE:
 	addi	t3, x0, PARTY_SIZE	# counter for drawing rects
-	la	t4, PARTY_IND		
-	lb	t4, 0(t4)		# get current selection index
 	
 	# draw rectangles for each member of party
 	addi	a0, x0, L_SIZE		# set initial x
@@ -763,7 +758,8 @@ PARTY_UPDATE:
 	addi	a1, x0, L_SIZE		# set initial y
 	addi	a1, a1, 2		# "
 P_DRAW_LOOP:
-	bnez	s2, P_DRAW_L_UNSEL	# if in boxes list (not party), don't color party boxes
+	bnez	t5, P_DRAW_L_UNSEL	# if in boxes list (not party), don't color party boxes
+	andi	t4, t6, 0x7FF		# bit mask indices to get just row index
 	bne	t3, t4, P_DRAW_L_UNSEL	# set color based on index
 	addi	a3, x0, M_SEL_COLOR	# set color of rect to WHITE for not selected
 	j	P_DRAW_L_CONT
@@ -823,32 +819,40 @@ PARTY_PAGE:
 	beq	t0, t1, MENU_START	# if key pressed was space, go to menu page
 	j	PARTY_PAGE
 PARTY_MOVE_DOWN:
-	la	t0, PARTY_IND		# get party index address
-	lb	t1, 0(t0)		# get party index
-	addi	t1, t1, -1		# move index down (decrease by 1)
+	andi	t4, t6, 0x7FF		# isolate row index
+	addi	t4, t4, -1		# move index down (decrease by 1)
 	# check for overflow
-	bgtz	t1, PARTY_MOVE_END	# index still >0 - skip
-	addi	t1, x0, PARTY_SIZE	# index too low - set back to party size for first index
+	bgtz	t4, PARTY_MOVE_D_2	# index still >0 - skip reset
+	# index too low - set back to party size for first index
+	ori	t6, t6, 0x7FF		# bitmask to set lower halfword back to PARTY_SIZE
+	addi	t6, t6, -0x7F9		# set lower halfword back to PARTY_SIZE
+	j	PARTY_MOVE_END
+PARTY_MOVE_D_2:
+	addi	t6, t6, -1		# decrease t6 by 1 because we know it's ok
 	j	PARTY_MOVE_END
 PARTY_MOVE_UP:
-	la	t0, PARTY_IND		# get party index address
-	lb	t1, 0(t0)		# get party index
-	addi	t1, t1, 1		# move index down (decrease by 1)
+	andi	t4, t6, 0x7FF		# isolate row index
+	addi	t4, t4, 1		# move index up (increase by 1)
 	# check for overflow
 	addi	t2, x0, PARTY_SIZE
-	ble	t1, t2, PARTY_MOVE_END	# index still <= PARTY_SIZE - skip
-	addi	t1, x0, 1		# index too low - set back to party size for first index
+	ble	t4, t2, PARTY_MOVE_U_2	# index still <= PARTY_SIZE - skip
+	# index too high - set back to 1 for last index
+	ori	t6, t6, 0x7FF		# bitmask to set lower halfword back to 1
+	addi	t6, t6, -0x7FE		# set lower halfword back to 1
+	j	PARTY_MOVE_END
+PARTY_MOVE_U_2:
+	addi	t6, t6, 1		# add 1 to t6 because we know it's ok
 	j	PARTY_MOVE_END
 PARTY_MOVE_R:
-	bnez	s2, PARTY_MOVE_END	# already in boxes (CHANGE LATER TO MOVE RIGHT)
-	addi	s2, x0, 1		# set flag to be in boxes
+	bnez	t5, PARTY_MOVE_END	# already in boxes (CHANGE LATER TO MOVE RIGHT)
+	addi	t5, x0, 1		# set flag to be in boxes
 	j	PARTY_MOVE_END
 PARTY_MOVE_L:
-	beqz	s2, PARTY_MOVE_END	# already in boxes (CHANGE LATER TO MOVE RIGHT)
-	mv	s2, x0			# set flag to be in party
+	beqz	t5, PARTY_MOVE_END	# already in boxes (CHANGE LATER TO MOVE RIGHT)
+	mv	t5, x0			# set flag to be in party
 	j	PARTY_MOVE_END
 PARTY_MOVE_END:
-	sb	t1, 0(t0)		# store new index
+	sh	t6, 0x40(s0)
 	j	PARTY_UPDATE
 	
                 
