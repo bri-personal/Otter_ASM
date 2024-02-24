@@ -756,10 +756,10 @@ PARTY_UPDATE:
 	addi	a1, a1, 2		# "
 P_DRAW_LOOP:
 	li	t0, 0x07FF0000		# get bitmask for col index
-	and	t4, t5, t0		# get col index
-	bnez	t4, P_DRAW_L_UNSEL	# if in boxes list (not party - col index>0), don't color party boxes
-	andi	t4, t5, 0x7FF		# bit mask indices to get just row index
-	bne	t3, t4, P_DRAW_L_UNSEL	# set color based on index
+	and	t0, t5, t0		# get col index
+	bnez	t0, P_DRAW_L_UNSEL	# if in boxes list (not party - col index>0), don't color party boxes
+	andi	t0, t5, 0x7FF		# bit mask indices to get just row index
+	bne	t3, t0, P_DRAW_L_UNSEL	# set color based on index
 	addi	a3, x0, M_SEL_COLOR	# set color of rect to WHITE for not selected
 	j	P_DRAW_L_CONT
 P_DRAW_L_UNSEL:
@@ -830,11 +830,11 @@ PARTY_MOVE_D_2:
 	addi	t5, t5, -1		# decrease t5 by 1 because we know it's ok
 	j	PARTY_MOVE_END
 PARTY_MOVE_UP:
-	andi	t4, t5, 0x7FF		# isolate row index
-	addi	t4, t4, 1		# move index up (increase by 1)
+	andi	t0, t5, 0x7FF		# isolate row index
+	addi	t0, t0, 1		# move index up (increase by 1)
 	# check for overflow
 	addi	t2, x0, PARTY_SIZE
-	ble	t4, t2, PARTY_MOVE_U_2	# index still <= PARTY_SIZE - skip
+	ble	t0, t2, PARTY_MOVE_U_2	# index still <= PARTY_SIZE - skip
 	# index too high - set back to 1 for last index
 	ori	t5, t5, 0x7FF		# bitmask to set lower halfword back to 1
 	addi	t5, t5, -0x7FE		# set lower halfword back to 1
