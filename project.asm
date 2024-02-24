@@ -810,7 +810,11 @@ P_B_DRAW_CONT:
 	sub	t0, t0, t1		# see what happens if col index is dec'd
 	beqz	t0, P_B_COUNT_ROW	# if got to 0, dec row and set back to BOXES_COLS
 	sub	t3, t3, t1		# safe to subtract 1 from actual row index
-	j P_B_COUNT_CONT
+	mv	a0, a2			# go to x for next rect
+	addi	a0, a0, 2		# "
+	addi	a1, a1, -PARTY_RECT_H	# reset y
+	addi	a1, a1, -1		# "
+	j P_B_DRAW_LOOP
 P_B_COUNT_ROW:
 	# check if row index is too low
 	andi	t0, t3, 0x7FF
@@ -822,21 +826,9 @@ P_B_COUNT_ROW:
 	addi	t0, x0, BOXES_COLS
 	slli	t0, t0, 16
 	add	t3, t3, t0		# set col index to BOXES_COLS
-P_B_COUNT_CONT:	
-	# check coords of next rect
-	mv	a0, a2			# go to x for next rect
-	addi	a0, a0, 2		# "
-	addi	a1, a1, -PARTY_RECT_H	# reset y
-	addi	a1, a1, -1		# "
-	addi	t0, a0, -WIDTH		# compare x to width to see if going off screen
-	addi	t0, t0, PARTY_RECT_H	# "
-	bltz	t0, P_B_DRAW_LOOP	# if right side of rect is not offscreen, draw next one
 	mv	a0, t4			# reset x
-	addi	a1, a1, PARTY_RECT_H	# set y to next row
-	addi	a1, a1, 2		# "
-	addi	t0, a1, -HEIGHT		# compare y to height to see if going off screen
-	addi	t0, t0, PARTY_RECT_H	# "
-	bltz	t0, P_B_DRAW_LOOP	# if bottom of rect is not offscreen, draw next one
+	addi	a1, a1, 1		# set y to next row
+	j	P_B_DRAW_LOOP		# if bottom of rect is not offscreen, draw next one
 PARTY_PAGE:
 	beqz	s1, PARTY_PAGE		# check for interrupt
 	
