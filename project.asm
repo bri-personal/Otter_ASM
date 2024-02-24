@@ -29,10 +29,12 @@
 .eqv	L_SIZE	5		# width and height of letters
 
 # party quantities
-.eqv	PARTY_SIZE	6	# number of members of party/number of rects to be drawn. MUST BE MAX 2047 FOR BITMASKING
+.eqv	PARTY_SIZE	6	# number of members of party/number of rects to be drawn. MUST BE MAX 2047 (0x7FF) FOR BITMASKING
+				# for PARTY_RECT_HEIGHT of 7, maximum 6 to fit on screen
 .eqv	PARTY_RECT_W	30	# width of party rectangles
 .eqv	PARTY_RECT_H	7	# height of party rectangles
-.eqv	BOXES_COLS	4	# number of columns in boxes. MUST BE MAX 2047 FOR BITMASKING. rows set by PARTY_SIZE
+.eqv	BOXES_COLS	4	# number of columns in boxes. MUST BE MAX 2047 (0x7FF) FOR BITMASKING. rows set by PARTY_SIZE
+				# for PARTY_RECT_HEIGHT of 7, maximum 4 to fit on screen
 
 # menu quantities
 # MUST have 2 rows of equal number of squares and size must WIDTH / MENU_NUM_SQ
