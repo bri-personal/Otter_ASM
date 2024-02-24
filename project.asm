@@ -774,6 +774,11 @@ P_DRAW_L_CONT:
 	addi	t3, t3, -1		# dec counter
 	bgtz	t3, P_DRAW_LOOP		# if counter reaches 0, done drawing rects
 	
+	# initialize counters for boxes
+	addi	t3, x0, BOXES_COLS
+	slli	t3, t3, 16
+	addi	t3, t3, PARTY_SIZE
+	
 	# draw rectangles for boxes
 	addi	a0, x0, WIDTH		# set initial x
 	srli	a0, a0, 1		# "
@@ -783,10 +788,42 @@ P_DRAW_L_CONT:
 	addi	a1, x0, L_SIZE		# set initial y
 	addi	a1, a1, 2		# "
 P_B_DRAW_LOOP:
-	addi	a3, x0, WHITE		# set color of rect
+	andi	t0, t3, 0x7FF		# get row counter
+	andi	t1, t5, 0x7FF		# get selected row index
+	bne	t0, t1, P_B_DRAW_UNSEL	# if unequal, not selected box
+	li	t1, 0x07FF0000
+	and	t0, t3, t1		# get col counter
+	and	t1, t5, t1		# get selected col index
+	bne	t0, t1, P_B_DRAW_UNSEL	# if unequal, not selected index
+	addi	a3, x0, M_SEL_COLOR	# set color of rect for selected box
+	j	P_B_DRAW_CONT
+P_B_DRAW_UNSEL:
+	addi	a3, x0, WHITE		# set color of unselected box
+P_B_DRAW_CONT:
 	addi	a2, a0, PARTY_RECT_H	# get other corner of rect
 	addi	a4, a1, PARTY_RECT_H	# "
 	call	DRAW_RECT		# draw rect
+	# change counter
+	li	t0, 0x07FF0000
+	and	t0, t3, t0		# isolate col index
+	li	t1, 0x00010000
+	sub	t0, t0, t1		# see what happens if col index is dec'd
+	beqz	t0, P_B_COUNT_ROW	# if got to 0, dec row and set back to BOXES_COLS
+	sub	t3, t3, t1		# safe to subtract 1 from actual row index
+	j P_B_COUNT_CONT
+P_B_COUNT_ROW:
+	# check if row index is too low
+	andi	t0, t3, 0x7FF
+	addi	t0, t0, -1		# dec row index by 1
+	beqz	t0, PARTY_PAGE		# if got to 0, not going to draw anymore
+	# else, sub 1 and set col index to BOXES_COLS
+	addi	t3, t3, -1		# safe to dec actual row index
+	andi	t3, t3, 0x7FF
+	addi	t0, x0, BOXES_COLS
+	slli	t0, t0, 16
+	add	t3, t3, t0		# set col index to BOXES_COLS
+P_B_COUNT_CONT:	
+	# check coords of next rect
 	mv	a0, a2			# go to x for next rect
 	addi	a0, a0, 2		# "
 	addi	a1, a1, -PARTY_RECT_H	# reset y
@@ -823,10 +860,10 @@ PARTY_PAGE:
 	andi	t5, t5, 0x7FF		# if key pressed was space, and not in party list, go to party list
 	j	PARTY_UPDATE		# update UI to show that we're back in party list
 PARTY_MOVE_DOWN:
-	andi	t4, t5, 0x7FF		# isolate row index
-	addi	t4, t4, -1		# move index down (decrease by 1)
+	andi	t0, t5, 0x7FF		# isolate row index
+	addi	t0, t0, -1		# move index down (decrease by 1)
 	# check for overflow
-	bgtz	t4, PARTY_MOVE_D_2	# index still >0 - skip reset
+	bgtz	t0, PARTY_MOVE_D_2	# index still >0 - skip reset
 	# index too low - set back to party size for first index
 	ori	t5, t5, 0x7FF		# bitmask to set lower halfword back to PARTY_SIZE
 	addi	t5, t5, -0x7F9		# set lower halfword back to PARTY_SIZE
