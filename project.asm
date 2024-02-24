@@ -868,11 +868,23 @@ PARTY_MOVE_R_3:
 PARTY_MOVE_L:
 	li	t0, 0x07FF0000		# get bitmask for col index
 	and	t0, t5, t0		# get col index
-	beqz	t0, PARTY_MOVE_END	# already in boxes (CHANGE LATER TO MOVE RIGHT)
-	addi	t0, x0, -BOXES_COLS	# get shifted party size to add to t5
-	slli	t0, t0, 16		# "
-	add	t5, t5, t0		# sub 1 from col index
+	beqz	t0, PARTY_MOVE_END	# already in party
+	
+	# add 1 to col index, and set back to 1 if going above BOXES_COLS
+	# currently t0 is still shifted col index
+	li	t1, 0x00010000
+	add	t0, t0, t1		# add 1 to col index
+	addi	t2, x0, BOXES_COLS
+	addi	t2, t2, 1
+	slli	t2, t2, 16		# get shifted version of BOXES_COLS+1
+	bge	t0, t2, PARTY_MOVE_L_2	# if too high now, set back to 1
+	add	t5, t5, t1		# safe to add 1 to actual col index
 	j	PARTY_MOVE_END
+PARTY_MOVE_L_2:
+	# col index would be too high, so set back to 1
+	andi	t5, t5, 0x7FF
+	add	t5, t5, t1
+	# go directly to PARTY_MOVE_END
 PARTY_MOVE_END:
 	sw	t5, 0x40(s0)
 	j	PARTY_UPDATE
