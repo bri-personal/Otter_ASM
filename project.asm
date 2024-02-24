@@ -747,6 +747,7 @@ PARTY_START:
 	addi	a2, a2, -2
 	call	DRAW_VERT_LINE
 PARTY_UPDATE:
+	sw	t5, 0x40(s0)
 	addi	t3, x0, PARTY_SIZE	# counter for drawing rects
 	
 	# draw rectangles for each member of party
@@ -815,8 +816,12 @@ PARTY_PAGE:
 	addi	t1, x0, A_CODE
 	beq	t0, t1, PARTY_MOVE_L	# if key pressed was W, move party selection up
 	addi	t1, x0, SPACE_CODE
-	beq	t0, t1, MENU_START	# if key pressed was space, go to menu page
-	j	PARTY_PAGE
+	bne	t0, t1, PARTY_PAGE	# if not space, no other keys to check
+	li	t2, 0x07FF0000
+	and	t2, t5, t2		# isolate col index
+	beqz	t2, MENU_START		# if key pressed was space, and in party list, go to menu page
+	andi	t5, t5, 0x7FF		# if key pressed was space, and not in party list, go to party list
+	j	PARTY_UPDATE		# update UI to show that we're back in party list
 PARTY_MOVE_DOWN:
 	andi	t4, t5, 0x7FF		# isolate row index
 	addi	t4, t4, -1		# move index down (decrease by 1)
@@ -886,7 +891,6 @@ PARTY_MOVE_L_2:
 	add	t5, t5, t1
 	# go directly to PARTY_MOVE_END
 PARTY_MOVE_END:
-	sw	t5, 0x40(s0)
 	j	PARTY_UPDATE
 	
                 
