@@ -713,13 +713,10 @@ M_MOVE_END:
 
 # party page shows what is in party and reserves
 PARTY_START:
-	mv	t5, x0			# set bit flag for if in party list (0) or boxes list (1)
-	addi	t6, x0, BOXES_COLS	# set row and column indices for boxes in t6
-	slli	t6, t6, 16		# MSB halfword is column index
-	addi	t6, t6, PARTY_SIZE	# LSB halfword is row index (also used for party list)
+	addi	t6, x0, PARTY_SIZE	# LSB halfword is row index (also used for party list), start with col index 0 for party list
 	# row index ranges from PARTY_SIZE (first) to 1 (last)
 	# column index ranges from BOXES_COLS (first) to 1 (last)
-	sh	t6, 0x40(s0)
+	sw	t6, 0x40(s0)
 
 	addi	a3, x0, RED
 	call	DRAW_BG
@@ -758,7 +755,9 @@ PARTY_UPDATE:
 	addi	a1, x0, L_SIZE		# set initial y
 	addi	a1, a1, 2		# "
 P_DRAW_LOOP:
-	bnez	t5, P_DRAW_L_UNSEL	# if in boxes list (not party), don't color party boxes
+	li	t0, 0x07FF0000		# get bitmask for col index
+	and	t4, t6, t0		# get col index
+	bnez	t4, P_DRAW_L_UNSEL	# if in boxes list (not party - col index>0), don't color party boxes
 	andi	t4, t6, 0x7FF		# bit mask indices to get just row index
 	bne	t3, t4, P_DRAW_L_UNSEL	# set color based on index
 	addi	a3, x0, M_SEL_COLOR	# set color of rect to WHITE for not selected
@@ -844,15 +843,23 @@ PARTY_MOVE_U_2:
 	addi	t6, t6, 1		# add 1 to t6 because we know it's ok
 	j	PARTY_MOVE_END
 PARTY_MOVE_R:
-	bnez	t5, PARTY_MOVE_END	# already in boxes (CHANGE LATER TO MOVE RIGHT)
-	addi	t5, x0, 1		# set flag to be in boxes
+	li	t0, 0x07FF0000		# get bitmask for col index
+	and	t0, t6, t0		# get col index
+	bnez	t0, PARTY_MOVE_END	# already in boxes (CHANGE LATER TO MOVE RIGHT)
+	addi	t0, x0, BOXES_COLS	# get shifted party size to add to t6
+	slli	t0, t0, 16		# "
+	add	t6, t6, t0		# set col index to party size
 	j	PARTY_MOVE_END
 PARTY_MOVE_L:
-	beqz	t5, PARTY_MOVE_END	# already in boxes (CHANGE LATER TO MOVE RIGHT)
-	mv	t5, x0			# set flag to be in party
+	li	t0, 0x07FF0000		# get bitmask for col index
+	and	t0, t6, t0		# get col index
+	beqz	t0, PARTY_MOVE_END	# already in boxes (CHANGE LATER TO MOVE RIGHT)
+	addi	t0, x0, -BOXES_COLS	# get shifted party size to add to t6
+	slli	t0, t0, 16		# "
+	add	t6, t6, t0		# sub 1 from col index
 	j	PARTY_MOVE_END
 PARTY_MOVE_END:
-	sh	t6, 0x40(s0)
+	sw	t6, 0x40(s0)
 	j	PARTY_UPDATE
 	
                 
