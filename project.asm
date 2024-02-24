@@ -713,10 +713,10 @@ M_MOVE_END:
 
 # party page shows what is in party and reserves
 PARTY_START:
-	addi	t6, x0, PARTY_SIZE	# LSB halfword is row index (also used for party list), start with col index 0 for party list
+	addi	t5, x0, PARTY_SIZE	# LSB halfword is row index (also used for party list), start with col index 0 for party list
 	# row index ranges from PARTY_SIZE (first) to 1 (last)
 	# column index ranges from BOXES_COLS (first) to 1 (last)
-	sw	t6, 0x40(s0)
+	sw	t5, 0x40(s0)
 
 	addi	a3, x0, RED
 	call	DRAW_BG
@@ -756,9 +756,9 @@ PARTY_UPDATE:
 	addi	a1, a1, 2		# "
 P_DRAW_LOOP:
 	li	t0, 0x07FF0000		# get bitmask for col index
-	and	t4, t6, t0		# get col index
+	and	t4, t5, t0		# get col index
 	bnez	t4, P_DRAW_L_UNSEL	# if in boxes list (not party - col index>0), don't color party boxes
-	andi	t4, t6, 0x7FF		# bit mask indices to get just row index
+	andi	t4, t5, 0x7FF		# bit mask indices to get just row index
 	bne	t3, t4, P_DRAW_L_UNSEL	# set color based on index
 	addi	a3, x0, M_SEL_COLOR	# set color of rect to WHITE for not selected
 	j	P_DRAW_L_CONT
@@ -818,48 +818,48 @@ PARTY_PAGE:
 	beq	t0, t1, MENU_START	# if key pressed was space, go to menu page
 	j	PARTY_PAGE
 PARTY_MOVE_DOWN:
-	andi	t4, t6, 0x7FF		# isolate row index
+	andi	t4, t5, 0x7FF		# isolate row index
 	addi	t4, t4, -1		# move index down (decrease by 1)
 	# check for overflow
 	bgtz	t4, PARTY_MOVE_D_2	# index still >0 - skip reset
 	# index too low - set back to party size for first index
-	ori	t6, t6, 0x7FF		# bitmask to set lower halfword back to PARTY_SIZE
-	addi	t6, t6, -0x7F9		# set lower halfword back to PARTY_SIZE
+	ori	t5, t5, 0x7FF		# bitmask to set lower halfword back to PARTY_SIZE
+	addi	t5, t5, -0x7F9		# set lower halfword back to PARTY_SIZE
 	j	PARTY_MOVE_END
 PARTY_MOVE_D_2:
-	addi	t6, t6, -1		# decrease t6 by 1 because we know it's ok
+	addi	t5, t5, -1		# decrease t5 by 1 because we know it's ok
 	j	PARTY_MOVE_END
 PARTY_MOVE_UP:
-	andi	t4, t6, 0x7FF		# isolate row index
+	andi	t4, t5, 0x7FF		# isolate row index
 	addi	t4, t4, 1		# move index up (increase by 1)
 	# check for overflow
 	addi	t2, x0, PARTY_SIZE
 	ble	t4, t2, PARTY_MOVE_U_2	# index still <= PARTY_SIZE - skip
 	# index too high - set back to 1 for last index
-	ori	t6, t6, 0x7FF		# bitmask to set lower halfword back to 1
-	addi	t6, t6, -0x7FE		# set lower halfword back to 1
+	ori	t5, t5, 0x7FF		# bitmask to set lower halfword back to 1
+	addi	t5, t5, -0x7FE		# set lower halfword back to 1
 	j	PARTY_MOVE_END
 PARTY_MOVE_U_2:
-	addi	t6, t6, 1		# add 1 to t6 because we know it's ok
+	addi	t5, t5, 1		# add 1 to t5 because we know it's ok
 	j	PARTY_MOVE_END
 PARTY_MOVE_R:
 	li	t0, 0x07FF0000		# get bitmask for col index
-	and	t0, t6, t0		# get col index
+	and	t0, t5, t0		# get col index
 	bnez	t0, PARTY_MOVE_END	# already in boxes (CHANGE LATER TO MOVE RIGHT)
-	addi	t0, x0, BOXES_COLS	# get shifted party size to add to t6
+	addi	t0, x0, BOXES_COLS	# get shifted party size to add to t5
 	slli	t0, t0, 16		# "
-	add	t6, t6, t0		# set col index to party size
+	add	t5, t5, t0		# set col index to party size
 	j	PARTY_MOVE_END
 PARTY_MOVE_L:
 	li	t0, 0x07FF0000		# get bitmask for col index
-	and	t0, t6, t0		# get col index
+	and	t0, t5, t0		# get col index
 	beqz	t0, PARTY_MOVE_END	# already in boxes (CHANGE LATER TO MOVE RIGHT)
-	addi	t0, x0, -BOXES_COLS	# get shifted party size to add to t6
+	addi	t0, x0, -BOXES_COLS	# get shifted party size to add to t5
 	slli	t0, t0, 16		# "
-	add	t6, t6, t0		# sub 1 from col index
+	add	t5, t5, t0		# sub 1 from col index
 	j	PARTY_MOVE_END
 PARTY_MOVE_END:
-	sw	t6, 0x40(s0)
+	sw	t5, 0x40(s0)
 	j	PARTY_UPDATE
 	
                 
