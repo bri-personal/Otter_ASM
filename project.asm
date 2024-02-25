@@ -113,7 +113,8 @@ MENU_ARR:	.space 10
 
 # monster species array for index
 # species data structure is 28 bytes and is broken down as follows:
-# 0-11: species name
+# 0-10: species name (10 chars and 0 as terminator byte)
+# 11: EV yield (2 bits for each stat, then 4 empty bits)
 # 12-18: base stats (HP, ATK, DEF, SPA, SPD, SPE) max 255 each
 # 19-22: types 1 and 2 (5 bytes each, will be equal if only one type)
 # 23: catch rate
