@@ -26,20 +26,25 @@
 .eqv	T_MID_Y		5		# tile offset to start moving screen view up/down, should be about half of tiles per col-1 shown on screen at once
 
 # letter dimensions
-.eqv	L_SIZE	5		# width and height of letters
+.eqv	L_SIZE	5			# width and height of letters
 
 # party quantities
-.eqv	PARTY_SIZE	6	# number of members of party/number of rects to be drawn. MUST BE MAX 2047 (0x7FF) FOR BITMASKING
-				# for PARTY_RECT_HEIGHT of 7, maximum 6 to fit on screen
-.eqv	PARTY_RECT_W	30	# width of party rectangles
-.eqv	PARTY_RECT_H	7	# height of party rectangles
-.eqv	BOXES_COLS	4	# number of columns in boxes. MUST BE MAX 2047 (0x7FF) FOR BITMASKING. rows set by PARTY_SIZE
-				# for PARTY_RECT_HEIGHT of 7, maximum 4 to fit on screen
+.eqv	PARTY_SIZE	6		# number of members of party/number of rects to be drawn. MUST BE MAX 2047 (0x7FF) FOR BITMASKING
+					# for PARTY_RECT_HEIGHT of 7, maximum 6 to fit on screen
+.eqv	PARTY_RECT_W	30		# width of party rectangles
+.eqv	PARTY_RECT_H	7		# height of party rectangles
+.eqv	BOXES_COLS	4		# number of columns in boxes. MUST BE MAX 2047 (0x7FF) FOR BITMASKING. rows set by PARTY_SIZE
+					# for PARTY_RECT_HEIGHT of 7, maximum 4 to fit on screen
 
 # menu quantities
 # MUST have 2 rows of equal number of squares and size must WIDTH / MENU_NUM_SQ
-.eqv	MENU_NUM_SQ	8	# total number of squares in menu - must be even
-.eqv	MENU_SQ_SIZE	10	# width and height of squares on menu page
+.eqv	MENU_NUM_SQ	8		# total number of squares in menu - must be even
+.eqv	MENU_SQ_SIZE	10		# width and height of squares on menu page
+
+# monster quantities
+.eqv	MON_SIZE	48		# monster data structure is 48 bytes. see data segment for breakdown
+.eqv	PARTY_ARR_SIZE	288		# size of array of monster data structures for player party. MUST BE MON_SIZE * PARTY_SIZE
+.eqv	BOXES_ARR_SIZE	1152		# size of array of monster data structures for player boxes. MUST BE MON_SIZE * PARTY_SIZE * BOXES_COLS
 
 # define colors
 .eqv	BLACK		0
@@ -97,10 +102,27 @@ TILES_ARR:	.space 80
 ALL_TILES:	.space NUM_TILES
 
 # menu selection index (2 bytes) and button colors (number of bytes for number of buttons)
-# 0 - currently selected index
-# 1 - prev selected index
-# 2-9 - colors of buttons
+# 0: currently selected index
+# 1: prev selected index
+# 2-9: colors of buttons
 MENU_ARR:	.space 10
+
+# monster arrays for player party and boxes. sizes specified above
+# monster data structure is _ bytes broken down as follows:
+# 0: index number (max 255 bc 1 byte) deternunes name and species
+# 1: index number of held item (max 255 bc 1 byte)
+# 2-5: index numbers of moves (max 255 bc 1 byte)
+# 6: gender (2 LSB - 0 male, 1 female, 2 none), ability (2 bits), nature (4 MSB)
+# 7-9: exp points
+# 10-21: EVs for each stat (HP, ATK, DEF, SPA, SPD, SPE). 2 bytes each
+# 22-27: IVs for each stat (HP, ATK, DEF, SPA, SPD, SPE). 4 bytes each
+# 28-31: PP for each move
+# 32: level (max 100)
+# 33: status condition
+# 34-35: current HP
+# 36-47: stats (HP, ATK, DEF, SPA, SPD, SPE). 2 bytes each
+PARTY_ARR:	.space	PARTY_ARR_SIZE
+BOXES_ARR:	.space	BOXES_ARR_SIZE
 
 # strings - each byte is a character
 # last byte must be 0 as terminator character
