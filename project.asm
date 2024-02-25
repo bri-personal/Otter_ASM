@@ -2406,6 +2406,77 @@ DRAW_VERT_1:
 	addi	sp, sp, 4
 	ret
 	
+# Fills the 60x80 grid with color given by a3 using successive calls to draw_horizontal_line
+# Modifies (directly or indirectly): t0, t1, t2, a0, a1, a2, a4
+DRAW_BG:
+	addi	sp, sp, -4
+	sw	ra, 0(sp)
+	
+	# draw rectangle that fills screen
+	addi	a0, x0, 0
+	addi	a1, x0, 0
+	addi	a2, a0, WIDTH
+	addi	a2, a2, -1
+	addi	a4, a1, HEIGHT
+	addi	a4, a4, -1
+	call	DRAW_RECT
+	
+	lw	ra, 0(sp)
+	addi	sp, sp, 4
+	ret
+	
+# Draws rectangle (a0, a1) to (a2, a4) color given by a3 using successive calls to draw_horizontal_line
+# Modifies (directly or indirectly): t0, t1, t2, a1, a2, a4 (a0 is modified but ends up same as start)
+DRAW_RECT:
+	addi	sp, sp, -4
+	sw	ra, 0(sp)
+	addi	a4, a4, 1		# go from a1 to a4 inclusive
+	mv	t2, a0			# save start x
+RECT_START:
+	call	DRAW_HORIZ_LINE		# must not modify: a1, a3
+	mv	a0, t2			# restore start x
+	addi	a2, a2, -1		# restore end x
+	addi	a1, a1, 1		# increment row num
+	bne	a1, a4, RECT_START	# branch to draw more rows
+	lw	ra, 0(sp)
+	addi	sp, sp, 4
+	ret
+
+# draws a dot on the display at the given coordinates:
+# 	(X,Y) = (a0,a1) with a color stored in a3
+# 	(col, row) = (a0,a1)
+# Modifies (directly or indirectly): t0, t1
+DRAW_DOT:
+	addi	sp, sp, -4
+	sw	ra, 0(sp)
+	andi	t0, a0, 0x7F		# select bottom 7 bits (col)
+	andi	t1, a1, 0x3F		# select bottom 6 bits  (row)
+	slli	t1, t1, 7		# {a1[5:0],a0[6:0]} 
+	or	t0, t1, t0		# 13-bit address
+	sw	t0, 0x120(s0)		# write 13 address bits to register
+	sw	a3, 0x140(s0)		# write color data to frame buffer
+	lw	ra, 0(sp)
+	addi	sp, sp, 4
+	ret
+
+# reads color from the display at the given coordinates:
+# 	(X,Y) = (a0,a1) with a color stored in a3
+# 	(col, row) = (a0,a1)
+# Modifies (directly or indirectly): t0, t1, a3
+READ_DOT:
+	addi	sp, sp, -4
+	sw	ra, 0(sp)
+	andi	t0, a0, 0x7F		# select bottom 7 bits (col)
+	andi	t1, a1, 0x3F		# select bottom 6 bits  (row)
+	slli	t1, t1, 7		# {a1[5:0],a0[6:0]} 
+	or	t0, t1, t0		# 13-bit address
+	sw	t0, 0x120(s0)		# write 13 address bits to register
+	lb	a3, 0x160(s0)		# write color data to frame buffer
+	lw	ra, 0(sp)
+	addi	sp, sp, 4
+	ret
+##########################################################
+	
 # loads all data into data segment that needs to be preset
 # # load title string
 # # loads button colors into menu array
@@ -2989,73 +3060,3 @@ LOAD_T_ROW:
 	addi	sp, sp, 4
 	ret
 	
-
-# Fills the 60x80 grid with color given by a3 using successive calls to draw_horizontal_line
-# Modifies (directly or indirectly): t0, t1, t2, a0, a1, a2, a4
-DRAW_BG:
-	addi	sp, sp, -4
-	sw	ra, 0(sp)
-	
-	# draw rectangle that fills screen
-	addi	a0, x0, 0
-	addi	a1, x0, 0
-	addi	a2, a0, WIDTH
-	addi	a2, a2, -1
-	addi	a4, a1, HEIGHT
-	addi	a4, a4, -1
-	call	DRAW_RECT
-	
-	lw	ra, 0(sp)
-	addi	sp, sp, 4
-	ret
-	
-# Draws rectangle (a0, a1) to (a2, a4) color given by a3 using successive calls to draw_horizontal_line
-# Modifies (directly or indirectly): t0, t1, t2, a1, a2, a4 (a0 is modified but ends up same as start)
-DRAW_RECT:
-	addi	sp, sp, -4
-	sw	ra, 0(sp)
-	addi	a4, a4, 1		# go from a1 to a4 inclusive
-	mv	t2, a0			# save start x
-RECT_START:
-	call	DRAW_HORIZ_LINE		# must not modify: a1, a3
-	mv	a0, t2			# restore start x
-	addi	a2, a2, -1		# restore end x
-	addi	a1, a1, 1		# increment row num
-	bne	a1, a4, RECT_START	# branch to draw more rows
-	lw	ra, 0(sp)
-	addi	sp, sp, 4
-	ret
-
-# draws a dot on the display at the given coordinates:
-# 	(X,Y) = (a0,a1) with a color stored in a3
-# 	(col, row) = (a0,a1)
-# Modifies (directly or indirectly): t0, t1
-DRAW_DOT:
-	addi	sp, sp, -4
-	sw	ra, 0(sp)
-	andi	t0, a0, 0x7F		# select bottom 7 bits (col)
-	andi	t1, a1, 0x3F		# select bottom 6 bits  (row)
-	slli	t1, t1, 7		# {a1[5:0],a0[6:0]} 
-	or	t0, t1, t0		# 13-bit address
-	sw	t0, 0x120(s0)		# write 13 address bits to register
-	sw	a3, 0x140(s0)		# write color data to frame buffer
-	lw	ra, 0(sp)
-	addi	sp, sp, 4
-	ret
-
-# reads color from the display at the given coordinates:
-# 	(X,Y) = (a0,a1) with a color stored in a3
-# 	(col, row) = (a0,a1)
-# Modifies (directly or indirectly): t0, t1, a3
-READ_DOT:
-	addi	sp, sp, -4
-	sw	ra, 0(sp)
-	andi	t0, a0, 0x7F		# select bottom 7 bits (col)
-	andi	t1, a1, 0x3F		# select bottom 6 bits  (row)
-	slli	t1, t1, 7		# {a1[5:0],a0[6:0]} 
-	or	t0, t1, t0		# 13-bit address
-	sw	t0, 0x120(s0)		# write 13 address bits to register
-	lb	a3, 0x160(s0)		# write color data to frame buffer
-	lw	ra, 0(sp)
-	addi	sp, sp, 4
-	ret
