@@ -46,6 +46,10 @@
 .eqv	PARTY_ARR_SIZE	288		# size of array of monster data structures for player party. MUST BE MON_SIZE * PARTY_SIZE
 .eqv	BOXES_ARR_SIZE	1152		# size of array of monster data structures for player boxes. MUST BE MON_SIZE * PARTY_SIZE * BOXES_COLS
 
+.eqv	MON_SPEC_SIZE	28		# monster species data structure is 28 bytes. see data segment for breakdown
+.eqv	DEX_SIZE	1		# total number of monster species that exist
+.eqv	MON_DEX_SIZE	28		# total size in bytes of monster index. MUST BE MON_SPEC_SIZE * DEX_SIZE
+
 # define colors
 .eqv	BLACK		0
 .eqv	WHITE		0xFF
@@ -107,18 +111,28 @@ ALL_TILES:	.space NUM_TILES
 # 2-9: colors of buttons
 MENU_ARR:	.space 10
 
+# monster species array for index
+# species data structure is 28 bytes and is broken down as follows:
+# 0-11: species name
+# 12-18: base stats (HP, ATK, DEF, SPA, SPD, SPE) max 255 each
+# 19-22: types 1 and 2 (5 bytes each, will be equal if only one type)
+# 23: catch rate
+# 24-25: egg groups 1 and 2
+# 26-27: ability indices
+MON_DEX_ARR:	.space	MON_DEX_SIZE
+
 # monster arrays for player party and boxes. sizes specified above
-# monster data structure is _ bytes broken down as follows:
+# monster data structure is 48 bytes broken down as follows:
 # 0: index number (max 255 bc 1 byte) deternunes name and species
 # 1: index number of held item (max 255 bc 1 byte)
-# 2-5: index numbers of moves (max 255 bc 1 byte)
-# 6: gender (2 LSB - 0 male, 1 female, 2 none), ability (2 bits), nature (4 MSB)
+# 2-5: index numbers of 4 moves (max 255 bc 1 byte)
+# 6: gender (LSB - 0 male, 1 female), ability (1 bit), shiny (1 bit), nature (5 MSB)
 # 7-9: exp points
 # 10-21: EVs for each stat (HP, ATK, DEF, SPA, SPD, SPE). 2 bytes each
-# 22-27: IVs for each stat (HP, ATK, DEF, SPA, SPD, SPE). 4 bytes each
-# 28-31: PP for each move
-# 32: level (max 100)
-# 33: status condition
+# 22-27: IVs for each stat (HP, ATK, DEF, SPA, SPD, SPE). 1 byte each
+# 28-31: PP for each of the 4 moves
+# 32: level (7 LSB - max 100. MSB=0)
+# 33: status condition (3 LSB), remaining egg cycles (5 MSB. 0 if not egg)
 # 34-35: current HP
 # 36-47: stats (HP, ATK, DEF, SPA, SPD, SPE). 2 bytes each
 PARTY_ARR:	.space	PARTY_ARR_SIZE
