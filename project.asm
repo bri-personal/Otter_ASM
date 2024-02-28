@@ -2625,8 +2625,8 @@ LD_TITLE_LOOP_2:
 	sb	t1, 6(t0)
 	sb	x0, 7(t0)		# terminator 0 byte
 	addi	t2, t0, SPEC_EV_OFF	# address of species EV yield
-	addi	t1, x0, 0x800		# EV yield of 2 spe
-	sh	t1, 0(t2)
+	addi	t1, x0, 8		# EV yield of 2 spe
+	sb	t1, 1(t2)		# equivalent to 0x800 but only need to store the MSB byte
 	addi	t2, t0, SPEC_BASE_OFF	# address of species base stats
 	addi	t1, x0, 35
 	sb	t1, 0(t2)		# hp
@@ -2640,16 +2640,17 @@ LD_TITLE_LOOP_2:
 	addi	t1, x0, 90
 	sb	t1, 5(t2)		# spe
 	addi	t2, t0, SPEC_TYPE_OFF	# address of species types
-	addi	t1, x0, 0xC0C		# electric type = 12
-	sh	t1, 0(t2)
+	addi	t1, x0, 12		# electric type = 12
+	sb	t1, 0(t2)
+	sb	t1, 1(t2)		# equal for both because only one type
 	addi	t2, t0, SPEC_CATCH_OFF	# address of catch rate
-	addi	t1, x0, 0 # CHANGE
+	addi	t1, x0, 190
 	sb	t1, 0(t2)
 	addi	t2, t0, SPEC_EGG_OFF	# address of egg groups
-	addi	t1, x0, 0x0 # CHANGE
+	addi	t1, x0, 0x0 # CHANGE WHEN HAVE LIST
 	sh	t1, 0(t2)
 	addi	t2, t0, SPEC_AB_OFF	# address of abilities
-	addi	t1, x0, 0x0 # CHANGE
+	addi	t1, x0, 0x0 # CHANGE WHEN HAVE LIST
 	sh	t1, 0(t2)
 	addi	t2, t0, SPEC_SPRITE_OFF	# address of sprite colors
 	# store colors for sprite
