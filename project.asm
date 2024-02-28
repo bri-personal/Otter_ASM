@@ -46,9 +46,19 @@
 .eqv	PARTY_ARR_SIZE	288		# size of array of monster data structures for player party. MUST BE MON_SIZE * PARTY_SIZE
 .eqv	BOXES_ARR_SIZE	1152		# size of array of monster data structures for player boxes. MUST BE MON_SIZE * PARTY_SIZE * BOXES_COLS
 
-.eqv	MON_SPEC_SIZE	28		# monster species data structure is 28 bytes. see data segment for breakdown
+.eqv	MON_SPEC_SIZE	76		# monster species data structure is 28 bytes. see data segment for breakdown
 .eqv	DEX_SIZE	1		# total number of monster species that exist
-.eqv	MON_DEX_SIZE	28		# total size in bytes of monster index. MUST BE MON_SPEC_SIZE * DEX_SIZE
+.eqv	MON_DEX_SIZE	76		# total size in bytes of monster index. MUST BE MON_SPEC_SIZE * DEX_SIZE
+
+# byte offsets for each species entry in MON_DEX_ARR
+.eqv	SPEC_EV_OFF	11
+.eqv	SPEC_BASE_OFF	13
+.eqv	SPEC_TYPE_OFF	19
+.eqv	SPEC_CATCH_OFF	21
+.eqv	SPEC_EGG_OFF	22
+.eqv	SPEC_AB_OFF	24
+.eqv	SPEC_SPRITE_OFF	26
+.eqv	SPEC_SHINY_OFF	51
 
 # define colors
 .eqv	BLACK		0
@@ -114,12 +124,14 @@ MENU_ARR:	.space 10
 # monster species array for index
 # species data structure is 28 bytes and is broken down as follows:
 # 0-10: species name (10 chars and 0 as terminator byte)
-# 11: EV yield (2 bits for each stat, then 4 empty bits)
-# 12-18: base stats (HP, ATK, DEF, SPA, SPD, SPE) max 255 each
-# 19-22: types 1 and 2 (5 bytes each, will be equal if only one type)
-# 23: catch rate
-# 24-25: egg groups 1 and 2
-# 26-27: ability indices
+# 11-12: EV yield (2 bits for each stat, then 4 empty bits)
+# 13-18: base stats (HP, ATK, DEF, SPA, SPD, SPE) max 255 each
+# 19-20: types 1 and 2 (5 bits each, will be equal if only one type)
+# 21: catch rate
+# 22-23: egg groups 1 and 2
+# 24-25: ability indices
+# 26-50: sprite colors (5x5)
+# 51-75: shiny sprite colors (5x5)
 MON_DEX_ARR:	.space	MON_DEX_SIZE
 
 # monster arrays for player party and boxes. sizes specified above
@@ -2594,6 +2606,77 @@ LD_TITLE_LOOP_2:
 	addi	t0, t0, 1
 	addi	t1, x0, PURPLE		# settings
 	sb	t1, 0(t0)
+	
+	# load species index
+	la	t0, MON_DEX_ARR		# get address of dex array - start of first species name
+	addi	t1, x0, 'P'
+	sb	t1, 0(t0)
+	addi	t1, x0, 'I'
+	sb	t1, 1(t0)
+	addi	t1, x0, 'K'
+	sb	t1, 2(t0)
+	addi	t1, x0, 'A'
+	sb	t1, 3(t0)
+	addi	t1, x0, 'C'
+	sb	t1, 4(t0)
+	addi	t1, x0, 'H'
+	sb	t1, 5(t0)
+	addi	t1, x0, 'U'
+	sb	t1, 6(t0)
+	sb	x0, 7(t0)		# terminator 0 byte
+	addi	t2, t0, SPEC_EV_OFF	# address of species EV yield
+	addi	t1, x0, 0x800		# EV yield of 2 spe
+	sh	t1, 0(t2)
+	addi	t2, t0, SPEC_BASE_OFF	# address of species base stats
+	addi	t1, x0, 35
+	sb	t1, 0(t2)		# hp
+	addi	t1, x0, 55
+	sb	t1, 1(t2)		# atk
+	addi	t1, x0, 40
+	sb	t1, 2(t2)		# def
+	addi	t1, x0, 50
+	sb	t1, 3(t2)		# spa
+	sb	t1, 4(t2)		# spd
+	addi	t1, x0, 90
+	sb	t1, 5(t2)		# spe
+	addi	t2, t0, SPEC_TYPE_OFF	# address of species types
+	addi	t1, x0, 0xC0C		# electric type = 12
+	sh	t1, 0(t2)
+	addi	t2, t0, SPEC_CATCH_OFF	# address of catch rate
+	addi	t1, x0, 0 # CHANGE
+	sb	t1, 0(t2)
+	addi	t2, t0, SPEC_EGG_OFF	# address of egg groups
+	addi	t1, x0, 0x0 # CHANGE
+	sh	t1, 0(t2)
+	addi	t2, t0, SPEC_AB_OFF	# address of abilities
+	addi	t1, x0, 0x0 # CHANGE
+	sh	t1, 0(t2)
+	addi	t2, t0, SPEC_SPRITE_OFF	# address of sprite colors
+	# store colors for sprite
+	addi	t1, x0, YELLOW
+	addi	t3, t2, 25		# t2=counter, this is max
+PIK_SPRITE_LOOP:
+	sb	t1, 0(t2)		# store color
+	addi	t2, t2, 1		# inc counter
+	blt	t2, t3, PIK_SPRITE_LOOP
+	
+	addi	t2, t0, SPEC_SPRITE_OFF
+	addi	t1, x0, BLACK
+	sb	t1, 7(t2)
+	sb	t1, 9(t2)
+	# store colors for shiny sprite
+	addi	t1, x0, ORANGE
+	addi	t3, t2, 25		# set new max
+PIK_SHINY_LOOP:
+	sb	t1, 0(t2)		# store color
+	addi	t2, t2, 1		# inc counter
+	blt	t2, t3, PIK_SHINY_LOOP
+	
+	addi	t2, t0, SPEC_SHINY_OFF
+	addi	t1, x0, BLACK
+	sb	t1, 7(t2)
+	sb	t1, 9(t2)
+	###################################
 	
 	# load world tiles
         la	t0, TILES_ARR		# get tiles array address. t2 is still end of all tiles
