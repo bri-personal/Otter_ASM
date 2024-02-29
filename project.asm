@@ -136,7 +136,7 @@ MON_DEX_ARR:	.space	MON_DEX_SIZE
 
 # monster arrays for player party and boxes. sizes specified above
 # monster data structure is 48 bytes broken down as follows:
-# 0: index number (max 255 bc 1 byte) deternunes name and species
+# 0: index number (max 255 bc 1 byte) deternunes name and species - 255 means EMPTY
 # 1: index number of held item (max 255 bc 1 byte)
 # 2-5: index numbers of 4 moves (max 255 bc 1 byte)
 # 6: gender (LSB - 0 male, 1 female), ability (1 bit), shiny (1 bit), nature (5 MSB)
@@ -799,7 +799,7 @@ PARTY_START:
 	call	DRAW_VERT_LINE
 PARTY_UPDATE:
 	sw	t5, 0x40(s0)
-	addi	t3, x0, PARTY_SIZE	# counter for drawing rects
+	addi	t3, x0, PARTY_SIZE	# counter for drawing rects, DONT CHANGE UNLESS DEC'ing COUNT
 	
 	# draw rectangles for each member of party
 	addi	a0, x0, L_SIZE		# set initial x
@@ -819,8 +819,33 @@ P_DRAW_L_UNSEL:
 P_DRAW_L_CONT:
 	addi	a2, a0, PARTY_RECT_W	# get other corner of rect
 	addi	a4, a1, PARTY_RECT_H	# "
-	call	DRAW_RECT		# draw rect
-	mv	a1, a4			# go to y for next rect
+	call	DRAW_RECT		# draw rect - a0 is unchanged after and a1=a4=y coord below bottom of rect
+	
+	# draw mon if in party
+	la	t0, PARTY_ARR
+	addi	t1, t3, -PARTY_SIZE
+	neg	t1, t1			# get index of party from counter (counter is backwards)
+	beqz	t1, P_DRAW_L_MON_IND2
+P_DRAW_L_MON_IND:
+	# get byte address of mon at current party index
+	addi	t0, t0, MON_SIZE
+	addi	t1, t1, -1
+	bnez	t1, P_DRAW_L_MON_IND
+P_DRAW_L_MON_IND2:
+	lbu	t1, 0(t0)		# get index of mon at this position
+	addi	t2, x0, 0xFF
+	bgeu	t1, t2, P_DRAW_L_MON_END
+	# there is a mon to draw
+	addi	a1, a4, -PARTY_RECT_H
+	addi	a0, a0, 1
+	addi	a3, x0, BLUE
+	addi	a2, a0, 5
+	addi	a4, a1, 5
+	call	DRAW_RECT
+	addi	a0, a0, -1
+	addi	a1, a1, 1
+	
+P_DRAW_L_MON_END:
 	addi	a1, a1, 1		# "
 	addi	t3, t3, -1		# dec counter
 	bgtz	t3, P_DRAW_LOOP		# if counter reaches 0, done drawing rects
@@ -2606,6 +2631,20 @@ LD_TITLE_LOOP_2:
 	addi	t0, t0, 1
 	addi	t1, x0, PURPLE		# settings
 	sb	t1, 0(t0)
+	
+	# fill PARTY_ARR and BOXES_ARR with 255
+	la	t0, PARTY_ARR
+	addi	t1, x0, 0xFF
+	addi	t2, t0, PARTY_ARR_SIZE
+	addi	t2, t2, BOXES_ARR_SIZE	# assuming party arr and boxes arr are contiguous memory
+LD_PARTY_LOOP:
+	sb	t1, 0(t0)		# store 255
+	addi	t0, t0, MON_SIZE	# inc to start of next mon
+	blt	t0, t2, LD_PARTY_LOOP
+	# for testing, fill first index of party with 0. REMOVE LATER
+	la 	t0, PARTY_ARR
+	sb	x0, 0(t0)
+	addi	t0, t0, MON_SIZE
 	
 	# load species index
 	la	t0, MON_DEX_ARR		# get address of dex array - start of first species name
