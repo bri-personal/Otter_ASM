@@ -799,7 +799,7 @@ PARTY_START:
 	call	DRAW_VERT_LINE
 PARTY_UPDATE:
 	sw	t5, 0x40(s0)
-	addi	t3, x0, PARTY_SIZE	# counter for drawing rects, DONT CHANGE UNLESS DEC'ing COUNT
+	addi	t6, x0, PARTY_SIZE	# counter for drawing rects, DONT CHANGE UNLESS DEC'ing COUNT
 	
 	# draw rectangles for each member of party
 	addi	a0, x0, L_SIZE		# set initial x
@@ -811,7 +811,7 @@ P_DRAW_LOOP:
 	and	t0, t5, t0		# get col index
 	bnez	t0, P_DRAW_L_UNSEL	# if in boxes list (not party - col index>0), don't color party boxes
 	andi	t0, t5, 0x7FF		# bit mask indices to get just row index
-	bne	t3, t0, P_DRAW_L_UNSEL	# set color based on index
+	bne	t6, t0, P_DRAW_L_UNSEL	# set color based on index
 	addi	a3, x0, M_SEL_COLOR	# set color of rect to WHITE for not selected
 	j	P_DRAW_L_CONT
 P_DRAW_L_UNSEL:
@@ -823,7 +823,7 @@ P_DRAW_L_CONT:
 	
 	# draw mon if in party
 	la	t0, PARTY_ARR
-	addi	t1, t3, -PARTY_SIZE
+	addi	t1, t6, -PARTY_SIZE
 	neg	t1, t1			# get index of party from counter (counter is backwards)
 	beqz	t1, P_DRAW_L_MON_IND2
 P_DRAW_L_MON_IND:
@@ -845,7 +845,7 @@ P_DRAW_L_DEX_IND:
 	addi	t1, t1, -1
 	bnez	t1, P_DRAW_L_DEX_IND
 P_DRAW_L_DEX_IND2:
-	# 2 is address of mon species in dex
+	# t2 is address of mon species in dex
 	addi	t2, t2, SPEC_SPRITE_OFF	# get address of start of sprite
 	# set start coords and end coords
 	addi	a1, a4, -PARTY_RECT_H
@@ -866,13 +866,13 @@ P_DRAW_L_DEX_LP:
 	
 P_DRAW_L_MON_END:
 	addi	a1, a1, 1		# "
-	addi	t3, t3, -1		# dec counter
-	bgtz	t3, P_DRAW_LOOP		# if counter reaches 0, done drawing rects
+	addi	t6, t6, -1		# dec counter
+	bgtz	t6, P_DRAW_LOOP		# if counter reaches 0, done drawing rects
 	
 	# initialize counters for boxes
-	addi	t3, x0, BOXES_COLS
-	slli	t3, t3, 16
-	addi	t3, t3, PARTY_SIZE
+	addi	t6, x0, BOXES_COLS
+	slli	t6, t6, 16
+	addi	t6, t6, PARTY_SIZE
 	
 	# draw rectangles for boxes
 	addi	a0, x0, WIDTH		# set initial x
@@ -883,11 +883,11 @@ P_DRAW_L_MON_END:
 	addi	a1, x0, L_SIZE		# set initial y
 	addi	a1, a1, 2		# "
 P_B_DRAW_LOOP:
-	andi	t0, t3, 0x7FF		# get row counter
+	andi	t0, t6, 0x7FF		# get row counter
 	andi	t1, t5, 0x7FF		# get selected row index
 	bne	t0, t1, P_B_DRAW_UNSEL	# if unequal, not selected box
 	li	t1, 0x07FF0000
-	and	t0, t3, t1		# get col counter
+	and	t0, t6, t1		# get col counter
 	and	t1, t5, t1		# get selected col index
 	bne	t0, t1, P_B_DRAW_UNSEL	# if unequal, not selected index
 	addi	a3, x0, M_SEL_COLOR	# set color of rect for selected box
@@ -900,11 +900,11 @@ P_B_DRAW_CONT:
 	call	DRAW_RECT		# draw rect
 	# change counter
 	li	t0, 0x07FF0000
-	and	t0, t3, t0		# isolate col index
+	and	t0, t6, t0		# isolate col index
 	li	t1, 0x00010000
 	sub	t0, t0, t1		# see what happens if col index is dec'd
 	beqz	t0, P_B_COUNT_ROW	# if got to 0, dec row and set back to BOXES_COLS
-	sub	t3, t3, t1		# safe to subtract 1 from actual row index
+	sub	t6, t6, t1		# safe to subtract 1 from actual row index
 	mv	a0, a2			# go to x for next rect
 	addi	a0, a0, 2		# "
 	addi	a1, a1, -PARTY_RECT_H	# reset y
@@ -912,15 +912,15 @@ P_B_DRAW_CONT:
 	j P_B_DRAW_LOOP
 P_B_COUNT_ROW:
 	# check if row index is too low
-	andi	t0, t3, 0x7FF
+	andi	t0, t6, 0x7FF
 	addi	t0, t0, -1		# dec row index by 1
 	beqz	t0, PARTY_PAGE		# if got to 0, not going to draw anymore
 	# else, sub 1 and set col index to BOXES_COLS
-	addi	t3, t3, -1		# safe to dec actual row index
-	andi	t3, t3, 0x7FF
+	addi	t6, t6, -1		# safe to dec actual row index
+	andi	t6, t6, 0x7FF
 	addi	t0, x0, BOXES_COLS
 	slli	t0, t0, 16
-	add	t3, t3, t0		# set col index to BOXES_COLS
+	add	t6, t6, t0		# set col index to BOXES_COLS
 	mv	a0, t4			# reset x
 	addi	a1, a1, 1		# set y to next row
 	j	P_B_DRAW_LOOP		# if bottom of rect is not offscreen, draw next one
