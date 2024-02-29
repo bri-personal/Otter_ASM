@@ -832,18 +832,37 @@ P_DRAW_L_MON_IND:
 	addi	t1, t1, -1
 	bnez	t1, P_DRAW_L_MON_IND
 P_DRAW_L_MON_IND2:
-	lbu	t1, 0(t0)		# get index of mon at this position
+	lbu	t1, 0(t0)		# get dex index of mon at this position
 	addi	t2, x0, 0xFF
 	bgeu	t1, t2, P_DRAW_L_MON_END
 	# there is a mon to draw
+	# draw its sprite
+	la	t2, MON_DEX_ARR
+	beqz	t1, P_DRAW_L_DEX_IND2
+P_DRAW_L_DEX_IND:
+	# get byte address of mon species in dex
+	addi	t2, t2, MON_SPEC_SIZE
+	addi	t1, t1, -1
+	bnez	t1, P_DRAW_L_DEX_IND
+P_DRAW_L_DEX_IND2:
+	# 2 is address of mon species in dex
+	addi	t2, t2, SPEC_SPRITE_OFF	# get address of start of sprite
+	# set start coords and end coords
 	addi	a1, a4, -PARTY_RECT_H
 	addi	a0, a0, 1
-	addi	a3, x0, BLUE
 	addi	a2, a0, 5
 	addi	a4, a1, 5
-	call	DRAW_RECT
+P_DRAW_L_DEX_LP:
+	lb	a3, 0(t2)		# get color
+	call	DRAW_DOT
+	addi	t2, t2, 1
+	addi	a0, a0, 1		# inc x
+	blt	a0, a2, P_DRAW_L_DEX_LP
+	addi	a0, a0, -5		# reset x
+	addi	a1, a1, 1		# inc y
+	blt	a1, a4, P_DRAW_L_DEX_LP
 	addi	a0, a0, -1
-	addi	a1, a1, 1
+	addi	a1, a1, 2
 	
 P_DRAW_L_MON_END:
 	addi	a1, a1, 1		# "
@@ -2702,9 +2721,16 @@ PIK_SPRITE_LOOP:
 	
 	addi	t2, t0, SPEC_SPRITE_OFF
 	addi	t1, x0, BLACK
-	sb	t1, 7(t2)
-	sb	t1, 9(t2)
+	sb	t1, 6(t2)
+	sb	t1, 8(t2)
+	sb	t1, 17(t2)
+	sb	t1, 21(t2)
+	sb	t1, 23(t2)
+	addi	t1, x0, RED
+	sb	t1, 16(t2)
+	sb	t1, 18(t2)
 	# store colors for shiny sprite
+	addi	t2, t0, SPEC_SHINY_OFF
 	addi	t1, x0, ORANGE
 	addi	t3, t2, 25		# set new max
 PIK_SHINY_LOOP:
@@ -2714,8 +2740,14 @@ PIK_SHINY_LOOP:
 	
 	addi	t2, t0, SPEC_SHINY_OFF
 	addi	t1, x0, BLACK
-	sb	t1, 7(t2)
-	sb	t1, 9(t2)
+	sb	t1, 6(t2)
+	sb	t1, 8(t2)
+	sb	t1, 17(t2)
+	sb	t1, 21(t2)
+	sb	t1, 23(t2)
+	addi	t1, x0, RED
+	sb	t1, 16(t2)
+	sb	t1, 18(t2)
 	###################################
 	
 	# load world tiles
