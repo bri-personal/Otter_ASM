@@ -880,9 +880,7 @@ P_DRAW_L_DEX_LP:			# lp = loop
 	call	DRAW_LETTER
 	addi	a2, x0, '.'
 	call	DRAW_LETTER
-	addi	a2, x0, '.'
 	call	DRAW_LETTER
-	addi	a2, x0, '.'
 	call	DRAW_LETTER
 	
 	addi	a0, x0, L_SIZE		# reset x
@@ -1353,10 +1351,16 @@ DRAW_TILE:
 	ret
 	
 # draw 5x5 letter given by ascii in a2 with topleft at (a0, a1) with color in a3
-# modifies t0, t1, t2, t3, a0, a1, a2
+# modifies t0, t1, t2, t3, a0, a1
+# a0 and a1 are left as topleft coord for next char, if one should be drawn
+# a2 stays as ascii value
 DRAW_LETTER:
 	addi	sp, sp, -4
 	sw	ra, 0(sp)
+	
+	# push a2 (ascii val) to stack to preserve it
+	addi	sp, sp, -4
+	sw	a2, 0(sp)
 	
 	# save coords to draw lines
 	addi	t2, a0, 0 		# x coord
@@ -2421,6 +2425,10 @@ DL_END:
 	# set arg registers to topleft of where next character would be
 	add	a0, t2, t0
 	mv	a1, t3
+	
+	# retrieve a2 ascii value from stack
+	lw	a2, 0(sp)
+	addi	sp, sp, 4
 	
 	lw	ra, 0(sp)
 	addi	sp, sp, 4
