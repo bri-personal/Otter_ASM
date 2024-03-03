@@ -61,7 +61,17 @@
 .eqv	SPEC_SHINY_OFF	51
 
 # byte offsets for each mon entry in PARTY_ARR and BOXES_ARR
+.eqv	MON_ITEM_OFF	1
+.eqv	MON_MOVES_OFF	2
+.eqv	MON_DATA_OFF	6
+.eqv	MON_EXP_OFF	7
+.eqv	MON_EV_OFF	10
+.eqv	MON_IV_OFF	22
+.eqv	MON_PP_OFF	28
 .eqv 	MON_LEVEL_OFF	32
+.eqv	MON_STATUS_OFF	33
+.eqv	MON_HP_OFF	34
+.eqv	MON_STATS_OFF	36
 
 # define colors
 .eqv	BLACK		0
@@ -772,8 +782,6 @@ PARTY_START:
 	addi	t5, x0, PARTY_SIZE	# LSB halfword is row index (also used for party list), start with col index 0 for party list
 	# row index ranges from PARTY_SIZE (first) to 1 (last)
 	# column index ranges from BOXES_COLS (first) to 1 (last)
-	#sw	t5, 0x40(s0)
-
 	addi	a3, x0, RED
 	call	DRAW_BG
 	
@@ -836,6 +844,7 @@ P_DRAW_L_MON_IND:
 	addi	t1, t1, -1		# dec counter
 	bnez	t1, P_DRAW_L_MON_IND	# if counter = 0, byte address is correct for this party index
 P_DRAW_L_MON_IND2:
+	# s2 is now byte address of this monster in PARTY_ARR
 	lbu	t1, 0(s2)		# get dex index of mon at this position
 	addi	t2, x0, 0xFF
 	bgeu	t1, t2, P_DRAW_L_MON_END # if species is 255, this party index is empty
@@ -849,7 +858,7 @@ P_DRAW_L_DEX_IND:
 	addi	t1, t1, -1		# dec counter
 	bnez	t1, P_DRAW_L_DEX_IND	# if counter = 0, now at correct address for desired species
 P_DRAW_L_DEX_IND2:
-	# t2 is address of mon species in dex
+	# s3 is now byte address of this monster species in MON_DEX_ARR
 	addi	t2, s3, SPEC_SPRITE_OFF	# get address of start of sprite
 	# set start coords and end coords for drawing mon sprite
 	addi	a1, a4, -PARTY_RECT_H	# start y
@@ -869,7 +878,14 @@ P_DRAW_L_DEX_LP:			# lp = loop
 	# draw mon name
 	addi	a0, a0, 6
 	addi	a1, a1, -5
-	addi	a3, x0, BLACK
+	lb	t0, MON_DATA_OFF(s2)
+	andi	t0, t0, 1		# isolate LSB = gender
+	beqz	t0, P_DRAW_L_MALE	# if 0, male = blue
+	addi	a3, x0, RED		# if 1, female = red
+	j	P_DRAW_L_NAME
+P_DRAW_L_MALE:
+	addi	a3, x0, BLUE
+P_DRAW_L_NAME:
 	lb	a2, 0(s3)
 	call	DRAW_LETTER
 	la	t2, MON_DEX_ARR
@@ -2696,7 +2712,17 @@ LD_PARTY_LOOP:
 	# for testing, fill first index of party with 0. REMOVE LATER
 	la 	t0, PARTY_ARR
 	sb	x0, 0(t0)
+	addi	t1, x0, 1
+	sb	t1, MON_DATA_OFF(t0)
+	addi	t1, x0, 5	
+	sb	t1, MON_LEVEL_OFF(t0)
+	
 	addi	t0, t0, MON_SIZE
+	sb	x0, 0(t0)
+	addi	t1, x0, 0
+	sb	t1, MON_DATA_OFF(t0)
+	addi	t1, x0, 10	
+	sb	t1, MON_LEVEL_OFF(t0)
 	
 	# load species index
 	la	t0, MON_DEX_ARR		# get address of dex array - start of first species name
