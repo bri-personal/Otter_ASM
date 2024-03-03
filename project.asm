@@ -170,6 +170,7 @@ TITLE_STR:	.space 43		# title text displayed on title screen
 MENU_STR:	.space 5		# title text displayed on menu screen
 PARTY_STR:	.space 6		# title text displayed on party screen
 BOXES_STR:	.space 6		# title text displayed for boxes on party screen
+NUM_STR:	.space 6		# space to store string produced by NUM_TO_STR (6 bits for 5 digits and 0 terminator)
 
 
 # executed code
@@ -875,7 +876,7 @@ P_DRAW_L_DEX_LP:			# lp = loop
 	addi	a1, a1, 1		# inc y
 	blt	a1, a4, P_DRAW_L_DEX_LP	# check if y is end of rect
 	
-	# draw mon name
+	# draw mon level
 	addi	a0, a0, 6
 	addi	a1, a1, -5
 	lb	t0, MON_DATA_OFF(s2)
@@ -886,18 +887,18 @@ P_DRAW_L_DEX_LP:			# lp = loop
 P_DRAW_L_MALE:
 	addi	a3, x0, BLUE
 P_DRAW_L_NAME:
-	lb	a2, 0(s3)
-	call	DRAW_LETTER
-	la	t2, MON_DEX_ARR
-	lb	a2, 1(s3)
-	call	DRAW_LETTER
-	la	t2, MON_DEX_ARR
-	lb	a2, 2(s3)
+	addi	a2, x0, 'L'
 	call	DRAW_LETTER
 	addi	a2, x0, '.'
 	call	DRAW_LETTER
-	call	DRAW_LETTER
-	call	DRAW_LETTER
+	mv	t3, a0			# save x and y coords
+	mv	t4, a1			
+	lb	a0, MON_LEVEL_OFF(s2)	# get level as number
+	call	NUM_TO_STR
+	mv	a0, t3			# reset coords
+	mv	a1, t4
+	addi	a2, a2,	2		# only want last 3 digits
+	call	DRAW_STRING
 	
 	addi	a0, x0, L_SIZE		# reset x
 	addi	a0, a0, -2		# "
@@ -2480,6 +2481,37 @@ DS_END:
 	addi	sp, sp, 4
 	ret
 	
+# creates string in NUM_STR in memory segment for ascii chars of given number (front padding with 0)
+# a0 is number to make string
+# on ret, a2 is address of NUM_STR to draw
+# modifies a0, a1, a2, t0, t1, t2
+NUM_TO_STR:
+	addi	sp, sp, -4
+	sw	ra, 0(sp)
+	
+	la	t2, NUM_STR		# get address to store string
+	addi	t2, t2, 4		# address of LAST char (lowest digit) other than terminator
+NUM_TO_STR_LOOP:
+	# to form string: divide a0 by 10 until we can't anymore, each remainder is a char
+	addi	a1, x0, 10		# set divisor
+	call	DIVIDE			# divide num in a0 by 10
+	# now a0 is remainder and a1 is quotient
+	addi	a0, a0, 48		# get ASCII char for this number (0 -> 48, 1 -> 49, ...)
+	sb	a0, 0(t2)		# store ASCII
+	addi	t2, t2, -1		# dec address for next digit
+	
+	la	t0, NUM_STR		# get end address
+	bltu	t2, t0, NUM_TO_STR_END	# if last char stored, done
+	
+	mv	a0, a1			# quotient is new dividend
+	j	NUM_TO_STR_LOOP
+
+NUM_TO_STR_END:
+	la	a2, NUM_STR		# load address of created string
+	
+	lw	ra, 0(sp)
+	addi	sp, sp, 4
+	ret
 	
 # VGA subroutines #################################################
 
@@ -2703,6 +2735,10 @@ LD_TITLE_LOOP_2:
 	sb	t1, 4(t0)
 	sb	x0, 5(t0)		# last character in array is intentionally left 0 as terminator
 	
+	# load nums string
+	la	t0, NUM_STR
+	sb	x0, 5(t0)		# other digits will be changed, so just need to fill terminator
+	
 	# load menu button colors
 	la	t0, MENU_ARR
 	addi	t0, t0, 2		# get address of first color, after bytes reserved for button index
@@ -2753,7 +2789,7 @@ LD_PARTY_LOOP:
 	sb	x0, 0(t0)
 	addi	t1, x0, 0
 	sb	t1, MON_DATA_OFF(t0)
-	addi	t1, x0, 10	
+	addi	t1, x0, 100	
 	sb	t1, MON_LEVEL_OFF(t0)
 	
 	# load species index
