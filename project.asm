@@ -2581,6 +2581,38 @@ READ_DOT:
 	addi	sp, sp, 4
 	ret
 ##########################################################
+
+# math subroutines #######################################
+
+# binary division subroutine for two 16-bit unsigned ints
+# a0 = dividend, a1 = divisor
+# modifies a0, a1, t0, t1
+# on ret, a0 is remainder and a1 is quotient
+# if dividing by 0, quotient is 0 and remainder is dividend
+DIVIDE:
+		addi	sp, sp, -4
+		sw	ra, 0(sp)
+		
+		beqz	a1, DIV_LOOP_END	# if divisor is 0, undefined quotient, so end immeidately
+		mv	t0, x0			# store 0 for running total of quotient
+		slli	t1, a1, 15		# store left shifted original divisor as working divisor to be subtracted
+DIV_LOOP:				
+		bgtu	t1, a0, DIV_SHIFT	# if working divisor is greater than dividend, cannot be subtracted so need to go to next shift
+		addi	t0, t0, 1		# fill in current bit with 1
+		sub	a0, a0, t1		# subtract working divisor from dividend
+DIV_SHIFT:		
+		srli	t1, t1, 1		# shift working divisor to check next bit
+		bltu	t1, a1, DIV_LOOP_END	# if working divisor is less than original divisor, division is finished
+		slli	t0, t0, 1		# if not done, shift quotient again for next round
+		j DIV_LOOP
+DIV_LOOP_END:	
+		mv	a1, t0			# move quotient to a1 for return
+		
+		lw	ra, 0(sp)
+		addi	sp, sp, 4
+		ret
+###################################################################
+
 	
 # loads all data into data segment that needs to be preset
 # # load title string
