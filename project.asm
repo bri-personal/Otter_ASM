@@ -31,8 +31,8 @@
 # party quantities
 .eqv	PARTY_SIZE	6		# number of members of party/number of rects to be drawn. MUST BE MAX 2047 (0x7FF) FOR BITMASKING
 					# for PARTY_RECT_HEIGHT of 7, maximum 6 to fit on screen
-.eqv	PARTY_RECT_W	30		# width of party rectangles
-.eqv	PARTY_RECT_H	7		# height of party rectangles
+.eqv	PARTY_RECT_W	30		# width of party rectangles (due to how DRAW_RECT works, will actually be +1)
+.eqv	PARTY_RECT_H	7		# height of party rectangles (due to how DRAW_RECT works, will actually be +1)
 .eqv	BOXES_COLS	4		# number of columns in boxes. MUST BE MAX 2047 (0x7FF) FOR BITMASKING. rows set by PARTY_SIZE
 					# for PARTY_RECT_HEIGHT of 7, maximum 4 to fit on screen
 
@@ -767,7 +767,7 @@ PARTY_START:
 	addi	t5, x0, PARTY_SIZE	# LSB halfword is row index (also used for party list), start with col index 0 for party list
 	# row index ranges from PARTY_SIZE (first) to 1 (last)
 	# column index ranges from BOXES_COLS (first) to 1 (last)
-	sw	t5, 0x40(s0)
+	#sw	t5, 0x40(s0)
 
 	addi	a3, x0, RED
 	call	DRAW_BG
@@ -798,7 +798,7 @@ PARTY_START:
 	addi	a2, a2, -2
 	call	DRAW_VERT_LINE
 PARTY_UPDATE:
-	sw	t5, 0x40(s0)
+	#sw	t5, 0x40(s0)
 	addi	t6, x0, PARTY_SIZE	# counter for drawing rects, DONT CHANGE UNLESS DEC'ing COUNT
 	
 	# draw rectangles for each member of party
@@ -822,28 +822,28 @@ P_DRAW_L_CONT:
 	call	DRAW_RECT		# draw rect - a0 is unchanged after and a1=a4=y coord below bottom of rect
 	
 	# draw mon if in party
-	la	t0, PARTY_ARR
-	addi	t1, t6, -PARTY_SIZE
-	neg	t1, t1			# get index of party from counter (counter is backwards)
-	beqz	t1, P_DRAW_L_MON_IND2
+	la	t0, PARTY_ARR		# get party array address
+	addi	t1, t6, -PARTY_SIZE	# get index of party from counter (counter is backwards)
+	neg	t1, t1			# "
+	beqz	t1, P_DRAW_L_MON_IND2	# if index is 0, byte address is already correct
 P_DRAW_L_MON_IND:
 	# get byte address of mon at current party index
 	addi	t0, t0, MON_SIZE
 	addi	t1, t1, -1
-	bnez	t1, P_DRAW_L_MON_IND
+	bnez	t1, P_DRAW_L_MON_IND	# if counter = 0, byte address is correct for this party index
 P_DRAW_L_MON_IND2:
 	lbu	t1, 0(t0)		# get dex index of mon at this position
 	addi	t2, x0, 0xFF
-	bgeu	t1, t2, P_DRAW_L_MON_END
+	bgeu	t1, t2, P_DRAW_L_MON_END # if species is 255, this party index is empty
 	# there is a mon to draw
 	# draw its sprite
-	la	t2, MON_DEX_ARR
-	beqz	t1, P_DRAW_L_DEX_IND2
+	la	t2, MON_DEX_ARR		# get dex array address
+	beqz	t1, P_DRAW_L_DEX_IND2	# if species index is 0, already at correct byte address
 P_DRAW_L_DEX_IND:
 	# get byte address of mon species in dex
 	addi	t2, t2, MON_SPEC_SIZE
 	addi	t1, t1, -1
-	bnez	t1, P_DRAW_L_DEX_IND
+	bnez	t1, P_DRAW_L_DEX_IND	# if counter = 0, now at correct address for desired species
 P_DRAW_L_DEX_IND2:
 	# t2 is address of mon species in dex
 	addi	t2, t2, SPEC_SPRITE_OFF	# get address of start of sprite
@@ -852,7 +852,7 @@ P_DRAW_L_DEX_IND2:
 	addi	a0, a0, 1
 	addi	a2, a0, 5
 	addi	a4, a1, 5
-P_DRAW_L_DEX_LP:
+P_DRAW_L_DEX_LP:			# lp = loop
 	lb	a3, 0(t2)		# get color
 	call	DRAW_DOT
 	addi	t2, t2, 1
@@ -861,11 +861,31 @@ P_DRAW_L_DEX_LP:
 	addi	a0, a0, -5		# reset x
 	addi	a1, a1, 1		# inc y
 	blt	a1, a4, P_DRAW_L_DEX_LP
-	addi	a0, a0, -1
-	addi	a1, a1, 2
+	
+	# draw mon name
+	la	t2, MON_DEX_ARR
+	addi	a0, a0, 6
+	addi	a1, a1, -5
+	addi	a3, x0, BLACK
+	lb	a2, 0(t2)
+	call	DRAW_LETTER
+	la	t2, MON_DEX_ARR
+	lb	a2, 1(t2)
+	call	DRAW_LETTER
+	la	t2, MON_DEX_ARR
+	lb	a2, 2(t2)
+	call	DRAW_LETTER
+	addi	a2, x0, '.'
+	call	DRAW_LETTER
+	call	DRAW_LETTER
+	call	DRAW_LETTER
+	
+	addi	a0, x0, L_SIZE		# reset x
+	addi	a0, a0, -2		# "
+	addi	a1, a1, 7		# move y
 	
 P_DRAW_L_MON_END:
-	addi	a1, a1, 1		# "
+	addi	a1, a1, 1		# move y to start of next rect
 	addi	t6, t6, -1		# dec counter
 	bgtz	t6, P_DRAW_LOOP		# if counter reaches 0, done drawing rects
 	
