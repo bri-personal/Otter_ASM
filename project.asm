@@ -60,6 +60,9 @@
 .eqv	SPEC_SPRITE_OFF	26
 .eqv	SPEC_SHINY_OFF	51
 
+# byte offsets for each mon entry in PARTY_ARR and BOXES_ARR
+.eqv 	MON_LEVEL_OFF	32
+
 # define colors
 .eqv	BLACK		0
 .eqv	WHITE		0xFF
@@ -166,6 +169,8 @@ MAIN:
 	li	sp, STACK		# setup sp
         li	s0, MMIO		# setup MMIO pointer
         mv	s1, x0			# set interrupt flag to 0
+        mv	s2, x0			# will be used for party array addresses in party screen
+        mv	s3, x0			# will be used for dex array addresses in party screen
         
         # initialize player position
         la	t0, PLAYER		# load address of player pos
@@ -798,7 +803,6 @@ PARTY_START:
 	addi	a2, a2, -2
 	call	DRAW_VERT_LINE
 PARTY_UPDATE:
-	#sw	t5, 0x40(s0)
 	addi	t6, x0, PARTY_SIZE	# counter for drawing rects, DONT CHANGE UNLESS DEC'ing COUNT
 	
 	# draw rectangles for each member of party
@@ -822,74 +826,75 @@ P_DRAW_L_CONT:
 	call	DRAW_RECT		# draw rect - a0 is unchanged after and a1=a4=y coord below bottom of rect
 	
 	# draw mon if in party
-	la	t0, PARTY_ARR		# get party array address
+	la	s2, PARTY_ARR		# get party array address
 	addi	t1, t6, -PARTY_SIZE	# get index of party from counter (counter is backwards)
 	neg	t1, t1			# "
 	beqz	t1, P_DRAW_L_MON_IND2	# if index is 0, byte address is already correct
 P_DRAW_L_MON_IND:
 	# get byte address of mon at current party index
-	addi	t0, t0, MON_SIZE
-	addi	t1, t1, -1
+	addi	s2, s2, MON_SIZE	# inc address
+	addi	t1, t1, -1		# dec counter
 	bnez	t1, P_DRAW_L_MON_IND	# if counter = 0, byte address is correct for this party index
 P_DRAW_L_MON_IND2:
-	lbu	t1, 0(t0)		# get dex index of mon at this position
+	lbu	t1, 0(s2)		# get dex index of mon at this position
 	addi	t2, x0, 0xFF
 	bgeu	t1, t2, P_DRAW_L_MON_END # if species is 255, this party index is empty
 	# there is a mon to draw
 	# draw its sprite
-	la	t2, MON_DEX_ARR		# get dex array address
+	la	s3, MON_DEX_ARR		# get dex array address
 	beqz	t1, P_DRAW_L_DEX_IND2	# if species index is 0, already at correct byte address
 P_DRAW_L_DEX_IND:
 	# get byte address of mon species in dex
-	addi	t2, t2, MON_SPEC_SIZE
-	addi	t1, t1, -1
+	addi	s3, s3, MON_SPEC_SIZE	# inc address
+	addi	t1, t1, -1		# dec counter
 	bnez	t1, P_DRAW_L_DEX_IND	# if counter = 0, now at correct address for desired species
 P_DRAW_L_DEX_IND2:
 	# t2 is address of mon species in dex
-	addi	t2, t2, SPEC_SPRITE_OFF	# get address of start of sprite
-	# set start coords and end coords
-	addi	a1, a4, -PARTY_RECT_H
-	addi	a0, a0, 1
-	addi	a2, a0, 5
-	addi	a4, a1, 5
+	addi	t2, s3, SPEC_SPRITE_OFF	# get address of start of sprite
+	# set start coords and end coords for drawing mon sprite
+	addi	a1, a4, -PARTY_RECT_H	# start y
+	addi	a0, a0, 1		# start x
+	addi	a2, a0, 5		# end x
+	addi	a4, a1, 5		# end y
 P_DRAW_L_DEX_LP:			# lp = loop
 	lb	a3, 0(t2)		# get color
 	call	DRAW_DOT
-	addi	t2, t2, 1
+	addi	t2, t2, 1		# inc byte address
 	addi	a0, a0, 1		# inc x
-	blt	a0, a2, P_DRAW_L_DEX_LP
+	blt	a0, a2, P_DRAW_L_DEX_LP	# check if x is end of line
 	addi	a0, a0, -5		# reset x
 	addi	a1, a1, 1		# inc y
-	blt	a1, a4, P_DRAW_L_DEX_LP
+	blt	a1, a4, P_DRAW_L_DEX_LP	# check if y is end of rect
 	
 	# draw mon name
-	la	t2, MON_DEX_ARR
 	addi	a0, a0, 6
 	addi	a1, a1, -5
 	addi	a3, x0, BLACK
-	lb	a2, 0(t2)
+	lb	a2, 0(s3)
 	call	DRAW_LETTER
 	la	t2, MON_DEX_ARR
-	lb	a2, 1(t2)
+	lb	a2, 1(s3)
 	call	DRAW_LETTER
 	la	t2, MON_DEX_ARR
-	lb	a2, 2(t2)
+	lb	a2, 2(s3)
 	call	DRAW_LETTER
 	addi	a2, x0, '.'
 	call	DRAW_LETTER
+	addi	a2, x0, '.'
 	call	DRAW_LETTER
+	addi	a2, x0, '.'
 	call	DRAW_LETTER
 	
 	addi	a0, x0, L_SIZE		# reset x
 	addi	a0, a0, -2		# "
-	addi	a1, a1, 7		# move y
+	addi	a1, a1, 7		# move y back to where it was at end of drawing rect
 	
 P_DRAW_L_MON_END:
 	addi	a1, a1, 1		# move y to start of next rect
 	addi	t6, t6, -1		# dec counter
 	bgtz	t6, P_DRAW_LOOP		# if counter reaches 0, done drawing rects
 	
-	# initialize counters for boxes
+	# initialize counters for boxes (4 MSB = col counter, 4 LSB = row counter)
 	addi	t6, x0, BOXES_COLS
 	slli	t6, t6, 16
 	addi	t6, t6, PARTY_SIZE
