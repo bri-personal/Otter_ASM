@@ -2621,6 +2621,55 @@ READ_DOT:
 
 # math subroutines #######################################
 
+# binary multiplication subroutine for two 16-bit ints
+# must fit in range of 16 bit signed int
+# a0 and a1 = numbers to multiply
+# modifies a0, a1, t0, t1, t2
+# on ret, a0 is product
+MULTIPLY:
+	addi	sp, sp, -4
+	sw	ra, 0(sp)
+	
+	# set negative flag for end
+	mv	t0, x0		# initialize flag
+	bgez	a0, MULT_1_POS	# if pos, skip
+	not	t0, t0		# if negative, set flag
+	neg	a0, a0		# if negative, make pos
+MULT_1_POS:
+	bgez	a1, MULT_2_POS	# if pos, skip
+	not	t0, t0		# if negative, set flag
+	neg	a1, a1		# if negative, make pos
+MULT_2_POS:
+	# push neg flag to stack
+	addi	sp, sp, -4
+	sw	t0, 0(sp)
+
+	addi	t0, x0, 0	# t0 is proudct
+	addi	t1, x0, 16	# t1 is counter
+COUNT:
+	beqz	t1, OUT		# beginning of the loop
+	andi	t2, a1, 1	# get LSB of a1 in t2
+	beq	t2, x0, SHIFT	# don't add if a1 LSB is 0
+	add	t0, a0, t0	# add shifted input to product
+SHIFT:
+	srli	a1, a1, 1	# shift right multiple
+	slli	a0, a0, 1	# shift left input
+	addi	t1, t1, -1	# increment counter
+	j	COUNT		# go back to the top of the loop
+OUT:
+	mv	a0, t0		# a0 = product
+	
+	# retrieve neg flag
+	lw	t0, 0(sp)
+	addi	sp, sp, 4
+	# check for neg
+	beqz	t0, MULT_END
+	neg	a0, a0
+MULT_END:	
+	lw	ra, 0(sp)
+	addi	sp, sp, 4
+	ret
+
 # binary division subroutine for two 16-bit ints
 # must fit in range of 16 bit signed int
 # a0 = dividend, a1 = divisor
@@ -2802,7 +2851,7 @@ LD_PARTY_LOOP:
 	sb	x0, 0(t0)
 	addi	t1, x0, 1
 	sb	t1, MON_DATA_OFF(t0)
-	addi	t1, x0, 5	
+	addi	t1, x0, 5
 	sb	t1, MON_LEVEL_OFF(t0)
 	
 	addi	t0, t0, MON_SIZE
