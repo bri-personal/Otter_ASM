@@ -859,9 +859,17 @@ P_DRAW_L_DEX_IND:
 	addi	s3, s3, MON_SPEC_SIZE	# inc address
 	addi	t1, t1, -1		# dec counter
 	bnez	t1, P_DRAW_L_DEX_IND	# if counter = 0, now at correct address for desired species
-P_DRAW_L_DEX_IND2:
 	# s3 is now byte address of this monster species in MON_DEX_ARR
+P_DRAW_L_DEX_IND2:
+	# check if this mon is shiny
+	lb	t1, MON_DATA_OFF(s2)
+	andi	t1, t1, 4		# mask shiny bit
+	bnez	t1, P_DRAW_L_SHINY
 	addi	t2, s3, SPEC_SPRITE_OFF	# get address of start of sprite
+	j	P_DRAW_L_DEX2
+P_DRAW_L_SHINY:
+	addi	t2, s3, SPEC_SHINY_OFF	# get address of start of shiny sprite
+P_DRAW_L_DEX2:
 	# set start coords and end coords for drawing mon sprite
 	addi	a1, a4, -PARTY_RECT_H	# start y
 	addi	a0, a0, 1		# start x
@@ -2861,7 +2869,7 @@ LD_PARTY_LOOP:
 	
 	addi	t0, t0, MON_SIZE
 	sb	x0, 0(t0)
-	addi	t1, x0, 0
+	addi	t1, x0, 4
 	sb	t1, MON_DATA_OFF(t0)
 	addi	t1, x0, 100	
 	sb	t1, MON_LEVEL_OFF(t0)
