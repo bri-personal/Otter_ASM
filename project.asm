@@ -87,6 +87,7 @@
 .eqv	PURPLE		0xA3
 .eqv	D_GREEN		0x08
 .eqv	BROWN		0x89
+.eqv	MAUVE		0xA9
 .eqv	WALL_COLOR	D_GREEN
 .eqv	M_SEL_COLOR	L_GRAY
 
@@ -2867,14 +2868,22 @@ PIK_SPRITE_LOOP:
 	
 	addi	t2, t0, SPEC_SPRITE_OFF
 	addi	t1, x0, BLACK
+	sb	t1, 0(t2)
+	sb	t1, 4(t2)
+	sb	t1, 11(t2)
+	sb	t1, 13(t2)
+	addi	t1, x0, WHITE
 	sb	t1, 6(t2)
 	sb	t1, 8(t2)
-	sb	t1, 17(t2)
-	sb	t1, 21(t2)
-	sb	t1, 23(t2)
+	sb	t1, 10(t2)
+	sb	t1, 14(t2)
 	addi	t1, x0, RED
-	sb	t1, 16(t2)
-	sb	t1, 18(t2)
+	sb	t1, 15(t2)
+	sb	t1, 19(t2)
+	sb	t1, 20(t2)
+	sb	t1, 24(t2)
+	addi	t1, x0, MAUVE
+	sb	t1, 22(t2)
 	# store colors for shiny sprite
 	addi	t2, t0, SPEC_SHINY_OFF
 	addi	t1, x0, ORANGE
@@ -2886,14 +2895,22 @@ PIK_SHINY_LOOP:
 	
 	addi	t2, t0, SPEC_SHINY_OFF
 	addi	t1, x0, BLACK
+	sb	t1, 0(t2)
+	sb	t1, 4(t2)
+	sb	t1, 11(t2)
+	sb	t1, 13(t2)
+	addi	t1, x0, WHITE
 	sb	t1, 6(t2)
 	sb	t1, 8(t2)
-	sb	t1, 17(t2)
-	sb	t1, 21(t2)
-	sb	t1, 23(t2)
+	sb	t1, 10(t2)
+	sb	t1, 14(t2)
 	addi	t1, x0, RED
-	sb	t1, 16(t2)
-	sb	t1, 18(t2)
+	sb	t1, 15(t2)
+	sb	t1, 19(t2)
+	sb	t1, 20(t2)
+	sb	t1, 24(t2)
+	addi	t1, x0, MAUVE
+	sb	t1, 22(t2)
 	###################################
 	
 	# load world tiles
