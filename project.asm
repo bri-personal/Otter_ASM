@@ -947,6 +947,65 @@ P_B_DRAW_CONT:
 	addi	a2, a0, PARTY_RECT_H	# get other corner of rect
 	addi	a4, a1, PARTY_RECT_H	# "
 	call	DRAW_RECT		# draw rect
+	# get address of mon in this box
+	# get addr for beginning of correct row
+	la	s2, BOXES_ARR
+	andi	t0, t6, 0x7FF		# counter for rows to find box addr
+	addi	t0, t0, -PARTY_SIZE	# get index of row from counter (counter is backwards)
+	neg	t0, t0			# now t0 is counter for rows
+	beqz	t0, P_B_MON_IND_R2	# if 0, already on correct row
+P_B_MON_IND_R:
+	addi	s2, s2, MON_SIZE	# inc address to next row CHANGE TO DO MULTIPLICATION
+	addi	s2, s2, MON_SIZE	# "
+	addi	s2, s2, MON_SIZE	# "
+	addi	s2, s2, MON_SIZE	# "
+	addi	t0, t0, -1		# dec counter
+	bnez	t0, P_B_MON_IND_R
+	# now have address on correct row of boxes
+P_B_MON_IND_R2:
+	li	t0, 0x07FF0000
+	and	t0, t6, t0		# isolate col index
+	srli	t0, t0, 16		# get index of col from counter (counter is backwards)
+	addi	t0, t0, -BOXES_COLS	# "
+	neg	t0, t0			# now t0 is counter for cols
+	beqz	t0, P_B_MON_IND_C2	# if already 0, already at correct address
+P_B_MON_IND_C:
+	addi	s2, s2, MON_SIZE	# inc address to next col
+	addi	t0, t0, -1		# dec counter
+	bnez	t0, P_B_MON_IND_C	# if counter = 0, now at correct address for
+	# now have address on correct box row/col
+P_B_MON_IND_C2:
+	lbu	t1, 0(s2)		# get dex index of mon at this position
+	addi	t2, x0, 0xFF
+	bgeu	t1, t2, P_B_MON_END	# if species is 255, this party index is empty
+	# there is a mon to draw
+	# draw its sprite
+	la	s3, MON_DEX_ARR		# get dex array address
+	beqz	t1, P_B_L_DEX_IND2	# if species index is 0, already at correct byte address
+P_B_L_DEX_IND:
+	# get byte address of mon species in dex
+	addi	s3, s3, MON_SPEC_SIZE	# inc address
+	addi	t1, t1, -1		# dec counter
+	bnez	t1, P_B_L_DEX_IND	# if counter = 0, now at correct address for desired species
+	# s3 is now byte address of this monster species in MON_DEX_ARR
+P_B_L_DEX_IND2:
+	# push a2 to stack to save for next rect
+	addi	sp, sp, -4
+	sw	a2, 0(sp)
+	
+	# draw letter CHANGE LATER
+	lb	a2, 0(s3)
+	addi	a3, x0, BLACK
+	addi	a0, a0, 1		# set x to draw
+	addi	a1, a1, -PARTY_RECT_H	# set y to draw
+	call	DRAW_LETTER
+	addi	a1, a1, 7		# reset y
+	addi	a0, a0, -1		# reset x
+	
+	# pop a2 to get pixel coord back
+	lw	a2, 0(sp)
+	addi	sp, sp, 4
+P_B_MON_END:
 	# change counter
 	li	t0, 0x07FF0000
 	and	t0, t6, t0		# isolate col index
@@ -2859,8 +2918,22 @@ LD_PARTY_LOOP:
 	sb	t1, 0(t0)		# store 255
 	addi	t0, t0, MON_SIZE	# inc to start of next mon
 	blt	t0, t2, LD_PARTY_LOOP
-	# for testing, fill first index of party with 0. REMOVE LATER
+	# for testing, fill some indices of party/boxes with 0. REMOVE LATER
 	la 	t0, PARTY_ARR
+	sb	x0, 0(t0)
+	addi	t1, x0, 1
+	sb	t1, MON_DATA_OFF(t0)
+	addi	t1, x0, 5
+	sb	t1, MON_LEVEL_OFF(t0)
+	
+	addi	t0, t0, MON_SIZE
+	sb	x0, 0(t0)
+	addi	t1, x0, 4
+	sb	t1, MON_DATA_OFF(t0)
+	addi	t1, x0, 100	
+	sb	t1, MON_LEVEL_OFF(t0)
+	
+	la	t0, BOXES_ARR
 	sb	x0, 0(t0)
 	addi	t1, x0, 1
 	sb	t1, MON_DATA_OFF(t0)
