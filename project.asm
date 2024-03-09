@@ -988,23 +988,32 @@ P_B_L_DEX_IND:
 	addi	t1, t1, -1		# dec counter
 	bnez	t1, P_B_L_DEX_IND	# if counter = 0, now at correct address for desired species
 	# s3 is now byte address of this monster species in MON_DEX_ARR
-P_B_L_DEX_IND2:
-	# push a2 to stack to save for next rect
-	addi	sp, sp, -4
-	sw	a2, 0(sp)
-	
-	# draw letter CHANGE LATER
-	lb	a2, 0(s3)
-	addi	a3, x0, BLACK
-	addi	a0, a0, 1		# set x to draw
-	addi	a1, a1, -PARTY_RECT_H	# set y to draw
-	call	DRAW_LETTER
-	addi	a1, a1, 7		# reset y
-	addi	a0, a0, -1		# reset x
-	
-	# pop a2 to get pixel coord back
-	lw	a2, 0(sp)
-	addi	sp, sp, 4
+P_B_L_DEX_IND2:	
+	# check if this mon is shiny
+	lb	t1, MON_DATA_OFF(s2)
+	andi	t1, t1, 4		# mask shiny bit
+	bnez	t1, P_B_L_SHINY
+	addi	t2, s3, SPEC_SPRITE_OFF	# get address of start of sprite
+	j	P_B_L_DRAW
+P_B_L_SHINY:
+	addi	t2, s3, SPEC_SHINY_OFF	# get address of start of shiny sprite
+P_B_L_DRAW:
+	# set start coords and end coords for drawing mon sprite
+	addi	a1, a4, -PARTY_RECT_H	# start y
+	addi	a0, a0, 1		# start x
+	addi	a2, a0, 5		# end x
+	addi	a4, a1, 5		# end y
+P_B_L_DRAW_LP:				# lp = loop
+	lb	a3, 0(t2)		# get color
+	call	DRAW_DOT
+	addi	t2, t2, 1		# inc byte address
+	addi	a0, a0, 1		# inc x
+	blt	a0, a2, P_B_L_DRAW_LP	# check if x is end of line
+	addi	a0, a0, -5		# reset x
+	addi	a1, a1, 1		# inc y
+	blt	a1, a4, P_B_L_DRAW_LP	# check if y is end of rect
+	addi	a1, a1, 2		# reset y
+	addi	a2, a2, 1		# reset end x
 P_B_MON_END:
 	# change counter
 	li	t0, 0x07FF0000
