@@ -954,13 +954,33 @@ P_B_DRAW_CONT:
 	addi	t0, t0, -PARTY_SIZE	# get index of row from counter (counter is backwards)
 	neg	t0, t0			# now t0 is counter for rows
 	beqz	t0, P_B_MON_IND_R2	# if 0, already on correct row
+	
+	# push to stack: a0, a1, t0 (to preserve values after calling MULTIPLY)
+	addi	sp, sp, -4
+	sw	a0, 0(sp)
+	addi	sp, sp, -4
+	sw	a1, 0(sp)
+	addi	sp, sp, -4
+	sw	t0, 0(sp)
+	
+	# get product of MON_SIZE and BOXES_COLS = number of bytes to skip per row
+	addi	a0, x0, MON_SIZE
+	addi	a1, x0, BOXES_COLS
+	call	MULTIPLY		# now a0 = byte offset for each row in boxes
+	
+	# pop from stack: t0, a1 (get back values)
+	lw	t0, 0(sp)
+	addi	sp, sp, 4
+	lw	a1, 0(sp)
+	addi	sp, sp, 4
 P_B_MON_IND_R:
-	addi	s2, s2, MON_SIZE	# inc address to next row CHANGE TO DO MULTIPLICATION
-	addi	s2, s2, MON_SIZE	# "
-	addi	s2, s2, MON_SIZE	# "
-	addi	s2, s2, MON_SIZE	# "
+	# add byte offset to s2 for address of next row
+	add	s2, s2, a0		# inc address to beginning of next row
 	addi	t0, t0, -1		# dec counter
-	bnez	t0, P_B_MON_IND_R
+	bnez	t0, P_B_MON_IND_R	# if 0, made it to beginning of correct row
+	# pop a0 from stack (get back value)
+	lw	a0, 0(sp)
+	addi	sp, sp, 4
 	# now have address on correct row of boxes
 P_B_MON_IND_R2:
 	li	t0, 0x07FF0000
