@@ -2832,57 +2832,45 @@ LD_TITLE_LOOP_2:
 	sb	t1, 0(t0)
 	
 	# fill player sprites
-	la	t0, PLAYER
-	addi	t1, x0, 0x53
-	sb	t1, P_DOWN_OFF(t0)	
+	la	t0, PLAYER	
 	addi	t2, t0, P_DOWN_OFF
-	addi	t2, t2, 1
-	li	t1, 0x00898989
+	li	t1, 0x89898953		# 0x53 is dimensions, rest are colors
 	sw	t1, 0(t2)
-	li	t1, 0xA9FA00FA
+	li	t1, 0xFA00FA00
 	sw	t1, 4(t2)
-	li	t1, 0x030303FA
+	li	t1, 0x0303FAA9
 	sw	t1, 8(t2)
-	li	t1, 0x030303
+	li	t1, 0x03030303
 	sw	t1, 12(t2)
 	
-	addi	t1, x0, 0x53
-	sb	t1, P_UP_OFF(t0)
 	addi	t2, t0, P_UP_OFF
-	addi	t2, t2, 1
-	li	t1, 0x89898989
+	li	t1, 0x89898953		# 0x53 is dimensions, rest are colors
 	sw	t1, 0(t2)
-	li	t1, 0xFAFA8989
+	li	t1, 0xFA898989
 	sw	t1, 4(t2)
-	li	t1, 0x030303FA
+	li	t1, 0x0303FAFA
 	sw	t1, 8(t2)
-	li	t1, 0x030303
+	li	t1, 0x03030303
 	sw	t1, 12(t2)
 	
-	addi	t1, x0, 0x53
-	sb	t1, P_LEFT_OFF(t0)
 	addi	t2, t0, P_LEFT_OFF
-	addi	t2, t2, 1
-	li	t1, 0x00898989
+	li	t1, 0x89898953		# 0x53 is dimensions, rest are colors
 	sw	t1, 0(t2)
-	li	t1, 0xFAFA89FA
+	li	t1, 0xFA89FA00
 	sw	t1, 4(t2)
-	li	t1, 0x030303FA
+	li	t1, 0x0303FAFA
 	sw	t1, 8(t2)
-	li	t1, 0x030303
+	li	t1, 0x03030303
 	sw	t1, 12(t2)
 	
-	addi	t1, x0, 0x53
-	sb	t1, P_RIGHT_OFF(t0)
 	addi	t2, t0, P_RIGHT_OFF
-	addi	t2, t2, 1
-	li	t1, 0x89898989
+	li	t1, 0x89898953		# 0x53 is dimensions, rest are colors
 	sw	t1, 0(t2)
-	li	t1, 0xFAFA00FA
+	li	t1, 0xFA00FA89
 	sw	t1, 4(t2)
-	li	t1, 0x030303FA
+	li	t1, 0x0303FAFA
 	sw	t1, 8(t2)
-	li	t1, 0x030303
+	li	t1, 0x03030303
 	sw	t1, 12(t2)
 	
 	addi	t1, x0, 0x53
