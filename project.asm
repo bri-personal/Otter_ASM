@@ -117,8 +117,8 @@
 # 19-34: player up sprite (1 byte for dimensions, rest for colors). amount of bytes must equal P_AREA (P_WIDTH*P_HEIGHT) +1
 # 35-50: player left sprite (1 byte for dimensions, rest for colors). amount of bytes must equal P_AREA (P_WIDTH*P_HEIGHT) +1
 # 51-66: player right sprite (1 byte for dimensions, rest for colors). amount of bytes must equal P_AREA (P_WIDTH*P_HEIGHT) +1
-# 67-81: "sprite" of pixels behind player that can be redrawn after. amount of bytes must equal P_AREA (P_WIDTH*P_HEIGHT) +1
-PLAYER:		.space	82
+# 67-82: "sprite" of pixels behind player that can be redrawn after. amount of bytes must equal P_AREA (P_WIDTH*P_HEIGHT) +1
+PLAYER:		.space	83
 
 # player offset data
 # 0: pixel offset x - horiz pixel dist from prev tile
@@ -367,7 +367,7 @@ W_P_MOVE_RIGHT:
 	lb	t3, 0(t2)		# load player x
 	
 	# get max possible x
-	addi	t4, x0, WIDTH	
+	addi	t4, x0, WIDTH
 	addi	t4, t4, -P_WIDTH
 	beq	t3, t4, WORLD_UPDATE	# if player x already WIDTH-P_WIDTH, can't move right
 	
@@ -1193,6 +1193,7 @@ READ_PLAYER:
 	
 	# read colors of pixels where player will be
 	addi	t2, t3, P_BEHIND_OFF	# get address of start of array of pixels
+	addi	t2, t2, 1		# "
 	lb	a0, 0(t3)		# player x coord
 	lb	a1, 1(t3)		# player y coord
 	addi	t4, t2, P_AREA		# get end of array
@@ -1212,26 +1213,17 @@ P_READ_LOOP:
 	ret
 	
 # clear player and replace with previous background colors
-# modifies t0, t1, t2, t3, t4, a0, a1, a3
+# modifies t0, t1, t2, t3, a0, a1, a2, a3, a4
 # a0 and a1 must start as player topleft coords
+# at end, a0 is unmodified and a1 is y coord below bottom of player sprite
 CLEAR_PLAYER:
 	addi	sp, sp, -4
 	sw	ra, 0(sp)
 	# CHANGE: use draw_sprite
 	# fill the pixels with bg colors
-	la	t3, PLAYER
-	addi	t3, t3, P_BEHIND_OFF	# initialize pointer to colors array
-	addi	t2, t3, P_AREA		# get end of array
-	addi	t4, a0, P_WIDTH		# get x limit for drawing player
-P_CLEAR_LOOP:
-	lb	a3, 0(t3)		# get color at dot
-	call	DRAW_DOT		# draw dot where player was
-	addi	t3, t3, 1		# increment pointer to next
-	addi	a0, a0, 1		# increment x read
-	blt	a0, t4, P_CLEAR_LOOP	# if not too far right, go to next loop
-	addi	a0, a0, -P_WIDTH	# if too far right, revert x to first pos and inc y
-	addi	a1, a1, 1
-	blt	t3, t2, P_CLEAR_LOOP	# continue drawing until reach bottom of player
+	la	a2, PLAYER		# player address
+	addi	a2, a2, P_BEHIND_OFF	# address of "sprite" of colors behind player
+	call	DRAW_SPRITE		# draw these colors
 	
 	lw	ra, 0(sp)
 	addi	sp, sp, 4
