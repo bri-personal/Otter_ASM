@@ -892,10 +892,10 @@ P_DRAW_L_DEX_LP:			# lp = loop
 	andi	t0, t0, 1		# isolate LSB = gender
 	beqz	t0, P_DRAW_L_MALE	# if 0, male = blue
 	addi	a3, x0, RED		# if 1, female = red
-	j	P_DRAW_L_NAME
+	j	P_DRAW_L_LV
 P_DRAW_L_MALE:
 	addi	a3, x0, BLUE
-P_DRAW_L_NAME:
+P_DRAW_L_LV:
 	addi	a2, x0, 'L'
 	call	DRAW_LETTER
 	addi	a2, x0, '.'
@@ -906,7 +906,6 @@ P_DRAW_L_NAME:
 	call	NUM_TO_STR
 	mv	a0, t3			# reset coords
 	mv	a1, t4
-	addi	a2, a2,	2		# only want last 3 digits
 	call	DRAW_STRING
 	
 	addi	a0, x0, L_SIZE		# reset x
@@ -2598,14 +2597,21 @@ NUM_TO_STR_LOOP:
 	addi	t2, t2, -1		# dec address for next digit
 	
 	la	t0, NUM_STR		# get end address
-	bltu	t2, t0, NUM_TO_STR_END	# if last char stored, done
+	bltu	t2, t0, NUM_TO_STR_MV	# if last char stored, done
 	
 	mv	a0, a1			# quotient is new dividend
 	j	NUM_TO_STR_LOOP
 
-NUM_TO_STR_END:
+NUM_TO_STR_MV:
 	la	a2, NUM_STR		# load address of created string
-	
+	addi	t0, a2, 4		# address of last non-terminator char
+NUM_TO_STR_MV2:
+	lb	t1, 0(a2)		# get char at this addr
+	addi	t1, t1, -48		# check if it's 0 (48 is ascii of '0')
+	bnez	t1, NUM_TO_STR_END	# if it's not, this is start of string
+	addi	a2, a2, 1		# if it is, go to next addr
+	blt	a2, t0, NUM_TO_STR_MV2	# if this is addr of last char before terminator, also start of string
+NUM_TO_STR_END:
 	lw	ra, 0(sp)
 	addi	sp, sp, 4
 	ret
