@@ -865,27 +865,15 @@ P_DRAW_L_DEX_IND2:
 	lb	t1, MON_DATA_OFF(s2)
 	andi	t1, t1, 4		# mask shiny bit
 	bnez	t1, P_DRAW_L_SHINY
-	addi	t2, s3, SPEC_SPRITE_OFF	# get address of start of sprite
-	addi	t2, t2, 1		# "
+	addi	a2, s3, SPEC_SPRITE_OFF	# get address of start of sprite
 	j	P_DRAW_L_DEX2
 P_DRAW_L_SHINY:
-	addi	t2, s3, SPEC_SHINY_OFF	# get address of start of shiny sprite
-	addi	t2, t2, 1		# "
+	addi	a2, s3, SPEC_SHINY_OFF	# get address of start of shiny sprite
 P_DRAW_L_DEX2:
 	# set start coords and end coords for drawing mon sprite
 	addi	a1, a4, -PARTY_RECT_H	# start y
 	addi	a0, a0, 1		# start x
-	addi	a2, a0, 5		# end x
-	addi	a4, a1, 5		# end y
-P_DRAW_L_DEX_LP:			# lp = loop
-	lb	a3, 0(t2)		# get color
-	call	DRAW_DOT
-	addi	t2, t2, 1		# inc byte address
-	addi	a0, a0, 1		# inc x
-	blt	a0, a2, P_DRAW_L_DEX_LP	# check if x is end of line
-	addi	a0, a0, -5		# reset x
-	addi	a1, a1, 1		# inc y
-	blt	a1, a4, P_DRAW_L_DEX_LP	# check if y is end of rect
+	call	DRAW_SPRITE
 	
 	# draw mon level
 	addi	a0, a0, 6
@@ -1014,27 +1002,15 @@ P_B_L_DEX_IND2:
 	lb	t1, MON_DATA_OFF(s2)
 	andi	t1, t1, 4		# mask shiny bit
 	bnez	t1, P_B_L_SHINY
-	addi	t2, s3, SPEC_SPRITE_OFF	# get address of start of sprite
-	addi	t2, t2, 1		# "
+	addi	a2, s3, SPEC_SPRITE_OFF	# get address of start of sprite
 	j	P_B_L_DRAW
 P_B_L_SHINY:
-	addi	t2, s3, SPEC_SHINY_OFF	# get address of start of shiny sprite
-	addi	t2, t2, 1		# "
+	addi	a2, s3, SPEC_SHINY_OFF	# get address of start of shiny sprite
 P_B_L_DRAW:
 	# set start coords and end coords for drawing mon sprite
 	addi	a1, a4, -PARTY_RECT_H	# start y
 	addi	a0, a0, 1		# start x
-	addi	a2, a0, 5		# end x
-	addi	a4, a1, 5		# end y
-P_B_L_DRAW_LP:				# lp = loop
-	lb	a3, 0(t2)		# get color
-	call	DRAW_DOT
-	addi	t2, t2, 1		# inc byte address
-	addi	a0, a0, 1		# inc x
-	blt	a0, a2, P_B_L_DRAW_LP	# check if x is end of line
-	addi	a0, a0, -5		# reset x
-	addi	a1, a1, 1		# inc y
-	blt	a1, a4, P_B_L_DRAW_LP	# check if y is end of rect
+	call	DRAW_SPRITE
 	addi	a1, a1, 2		# reset y
 	addi	a2, a2, 1		# reset end x
 P_B_MON_END:
@@ -1463,6 +1439,34 @@ DRAW_TILE:
 	blt	a1, t5, LOAD_W_LOOP	# check if all tiles have been drawn
 
 	# all tiles drawn - done	
+	lw	ra, 0(sp)
+	addi	sp, sp, 4
+	ret
+	
+# draw (rectangular) sprite with topleft at (a0, a1) with address in a2
+# in memory, sprite is first byte: 4 LSB x dimension, 4 MSB y dimension, followed by bytes for colors
+# modifies t0, t1, t2, t3, a0, a1, a2, a3, a4
+# on ret, a0 is unmodified, a1 and a4 are y pixel below bottom of sprite, a2 is x pixel after right end of sprite
+DRAW_SPRITE:
+	addi	sp, sp, -4
+	sw	ra, 0(sp)
+	
+	addi	t2, a2, 1		# save address of colors
+	lb	t3, 0(a2)		# get dimensions
+	srli	a4, t3, 4		# get y dimension
+	add	a4, a1, a4		# get end y
+	andi	t3, t3, 0xF		# get x dimension - t3 because used in loop
+	add	a2, a0, t3		# get end x
+DRAW_SPRITE_LP:
+	lb	a3, 0(t2)		# get color for this pixel
+	addi	t2, t2, 1		# inc address
+	call	DRAW_DOT		# fill pixel
+	addi	a0, a0, 1		# go to next x
+	blt	a0, a2, DRAW_SPRITE_LP	# if not at end of row, draw next dot
+	sub	a0, a0, t3		# reset x
+	addi	a1, a1, 1		# go to next y
+	blt	a1, a4, DRAW_SPRITE_LP	# if not at end of sprite, draw next dot
+	
 	lw	ra, 0(sp)
 	addi	sp, sp, 4
 	ret
