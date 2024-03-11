@@ -12,6 +12,12 @@
 .eqv	P_WIDTH		3
 .eqv	P_HEIGHT	5
 .eqv	P_AREA		15		# must be P_WIDTH * P_HEIGHT
+.eqv	P_OR_OFF	2		# byte offset of orientation of player in memory
+.eqv	P_DOWN_OFF	3		# byte offset of player down sprite in memory
+.eqv	P_UP_OFF	19		# byte offset of player down sprite in memory
+.eqv	P_LEFT_OFF	35		# byte offset of player down sprite in memory
+.eqv	P_RIGHT_OFF	51		# byte offset of player down sprite in memory
+.eqv	P_BEHIND_OFF	67		# byte offset of "sprite" of pixels behind player in memory
 
 # tile dimensions
 .eqv	T_SIZE		5		# width and height of square tiles
@@ -88,6 +94,7 @@
 .eqv	D_GREEN		0x08
 .eqv	BROWN		0x89
 .eqv	MAUVE		0xA9
+.eqv	TAN		0xFA
 .eqv	WALL_COLOR	D_GREEN
 .eqv	M_SEL_COLOR	L_GRAY
 
@@ -106,8 +113,12 @@
 # 0: x coord of top of rectangle
 # 1: y coord of top of rectange
 # 2: orientation (0=down, 1=up, 2=left, 3=right)
-# 3-17: pixels behind it that can be redrawn after. amount of bytes must equal P_AREA (P_WIDTH*P_HEIGHT)
-PLAYER:		.space	18
+# 3-18: player down/forward sprite (1 byte for dimensions, rest for colors). amount of bytes must equal P_AREA (P_WIDTH*P_HEIGHT) +1
+# 19-34: player up sprite (1 byte for dimensions, rest for colors). amount of bytes must equal P_AREA (P_WIDTH*P_HEIGHT) +1
+# 35-50: player left sprite (1 byte for dimensions, rest for colors). amount of bytes must equal P_AREA (P_WIDTH*P_HEIGHT) +1
+# 51-66: player right sprite (1 byte for dimensions, rest for colors). amount of bytes must equal P_AREA (P_WIDTH*P_HEIGHT) +1
+# 67-81: "sprite" of pixels behind player that can be redrawn after. amount of bytes must equal P_AREA (P_WIDTH*P_HEIGHT) +1
+PLAYER:		.space	82
 
 # player offset data
 # 0: pixel offset x - horiz pixel dist from prev tile
@@ -1140,157 +1151,33 @@ ISR:
 	mret
 	
 # draw player on screen using coordinates in memory
-# modifies t0, t1, t2, t3, t4, t5, a0, a1, a2, a3, a4
+# modifies t0, t1, t2, t3, a0, a1, a2, a3, a4
 DRAW_PLAYER:
 	addi	sp, sp, -4
 	sw	ra, 0(sp)
 	
-	la	t3, PLAYER		# get address of player coords
-	# draw body
-	lb	a0, 0(t3)		# player x coord
-	lb	a1, 1(t3)		# player y coord
-	addi	a1, a1, 3
-	addi	a2, a0, P_WIDTH
-	addi	a2, a2, -1
-	addi	a4, a1, 1
-	addi	a3, x0, BLUE
-	call	DRAW_RECT
-	
-	# draw head based on orientation
-	lb	t2, 2(t3)		# get player orientation
-	addi	t5, x0, 1
-	beq	t2, t5, DP_OR_UP	# player orientation up
-	addi	t5, t5, 1
-	beq	t2, t5, DP_OR_LEFT	# player orientation left
-	addi	t5, t5, 1
-	beq	t2, t5, DP_OR_RIGHT	# player orientation right
-DP_OR_DOWN:
-	# draw hair
-	lb	a0, 0(t3)		# player x coord
-	lb	a1, 1(t3)		# player y coord
-	addi	a2, a0, P_WIDTH
-	addi	a2, a2, -1
-	addi	a3, x0, BROWN
-	call	DRAW_HORIZ_LINE
-	
-	#draw face
-	lb	a0, 0(t3)		# player x coord
-	lb	a1, 1(t3)		# player y coord
-	addi	a1, a1, 1
-	addi	a2, a0, P_WIDTH
-	addi	a2, a2, -1
-	addi	a4, a1, 1
-	addi	a3, x0, WHITE
-	call	DRAW_RECT
-	
-	#draw face features
-	lb	a0, 0(t3)		# player x coord
-	lb	a1, 1(t3)		# player y coord
-	addi	a1, a1, 1
-	addi	a3, x0, BLACK
-	call	DRAW_DOT
-	
-	addi	a0, a0, 2
-	call	DRAW_DOT
-	
-	addi	a0, a0, -1
-	addi	a1, a1, 1
-	addi	a3, x0, RED
-	call	DRAW_DOT
-	j	DP_OR_END
-DP_OR_UP:
-	#draw hair
-	lb	a0, 0(t3)		# player x coord
-	lb	a1, 1(t3)		# player y coord
-	addi	a2, a0, P_WIDTH
-	addi	a2, a2, -1
-	addi	a4, a1, 2
-	addi	a3, x0, BROWN
-	call	DRAW_RECT
-	
-	# draw rest of head
-	lb	a0, 0(t3)		# player x coord
-	lb	a1, 1(t3)		# player y coord
-	addi	a1, a1, 2
-	addi	a2, a0, P_WIDTH
-	addi	a2, a2, -1
-	addi	a3, x0, WHITE
-	call	DRAW_HORIZ_LINE
-	j	DP_OR_END
-DP_OR_LEFT:
-	#draw face
-	lb	a0, 0(t3)		# player x coord
-	lb	a1, 1(t3)		# player y coord
-	addi	a1, a1, 1
-	addi	a2, a0, P_WIDTH
-	addi	a2, a2, -1
-	addi	a4, a1, 1
-	addi	a3, x0, WHITE
-	call	DRAW_RECT
-
-	# draw hair
-	lb	a0, 0(t3)		# player x coord
-	lb	a1, 1(t3)		# player y coord
-	addi	a2, a0, P_WIDTH
-	addi	a2, a2, -1
-	addi	a3, x0, BROWN
-	call	DRAW_HORIZ_LINE
-	
-	lb	a0, 0(t3)		# player x coord
-	lb	a1, 1(t3)		# player y coord
-	addi	a0, a0, P_WIDTH
-	addi	a0, a0, -1
-	addi	a1, a1, 1
-	call	DRAW_DOT
-	
-	#draw face features
-	lb	a0, 0(t3)		# player x coord
-	lb	a1, 1(t3)		# player y coord
-	addi	a1, a1, 1
-	addi	a3, x0, BLACK
-	call	DRAW_DOT
-	
-	addi	a1, a1, 1
-	addi	a3, x0, RED
-	call	DRAW_DOT
-	j	DP_OR_END
-DP_OR_RIGHT:
-	#draw face
-	lb	a0, 0(t3)		# player x coord
-	lb	a1, 1(t3)		# player y coord
-	addi	a1, a1, 1
-	addi	a2, a0, P_WIDTH
-	addi	a2, a2, -1
-	addi	a4, a1, 1
-	addi	a3, x0, WHITE
-	call	DRAW_RECT
-
-	# draw hair
-	lb	a0, 0(t3)		# player x coord
-	lb	a1, 1(t3)		# player y coord
-	addi	a2, a0, P_WIDTH
-	addi	a2, a2, -1
-	addi	a3, x0, BROWN
-	call	DRAW_HORIZ_LINE
-	
-	lb	a0, 0(t3)		# player x coord
-	lb	a1, 1(t3)		# player y coord
-	addi	a1, a1, 1
-	call	DRAW_DOT
-	
-	#draw face features
-	lb	a0, 0(t3)		# player x coord
-	lb	a1, 1(t3)		# player y coord
-	addi	a0, a0, P_WIDTH
-	addi	a0, a0, -1
-	addi	a1, a1, 1
-	addi	a3, x0, BLACK
-	call	DRAW_DOT
-	
-	addi	a1, a1, 1
-	addi	a3, x0, RED
-	call	DRAW_DOT
-	j	DP_OR_END
+	la	a2, PLAYER		# get address of player coords
+	lb	a0, 0(a2)		# get x coord
+	lb	a1, 1(a2)		# get y coord
+	lb	t0, P_OR_OFF(a2)	# get player orientation
+	addi	t1, x0, 1
+	beq	t0, t1, DP_UP		# if orientation is 1, player facing up
+	addi	t1, x0, 2
+	beq	t0, t1, DP_LEFT		# if orientation is 2, player facing left
+	addi	t1, x0, 3
+	beq	t0, t1, DP_RIGHT	# if orientation is 3, player facing right
+	addi	a2, a2, P_DOWN_OFF
+	j	DP_CALL
+DP_UP:
+	addi	a2, a2, P_UP_OFF
+	j	DP_CALL
+DP_LEFT:
+	addi	a2, a2, P_LEFT_OFF
+	j	DP_CALL
+DP_RIGHT:
+	addi	a2, a2, P_RIGHT_OFF
+DP_CALL:
+	call	DRAW_SPRITE
 DP_OR_END:
 	lw	ra, 0(sp)
 	addi	sp, sp, 4
@@ -1305,7 +1192,7 @@ READ_PLAYER:
 	la	t3, PLAYER		# get address of player coords
 	
 	# read colors of pixels where player will be
-	addi	t2, t3, 3		# get address of start of array of pixels
+	addi	t2, t3, P_BEHIND_OFF	# get address of start of array of pixels
 	lb	a0, 0(t3)		# player x coord
 	lb	a1, 1(t3)		# player y coord
 	addi	t4, t2, P_AREA		# get end of array
@@ -1330,10 +1217,10 @@ P_READ_LOOP:
 CLEAR_PLAYER:
 	addi	sp, sp, -4
 	sw	ra, 0(sp)
-	
+	# CHANGE: use draw_sprite
 	# fill the pixels with bg colors
 	la	t3, PLAYER
-	addi	t3, t3, 3		# initialize pointer to colors array
+	addi	t3, t3, P_BEHIND_OFF	# initialize pointer to colors array
 	addi	t2, t3, P_AREA		# get end of array
 	addi	t4, a0, P_WIDTH		# get x limit for drawing player
 P_CLEAR_LOOP:
@@ -2951,6 +2838,63 @@ LD_TITLE_LOOP_2:
 	addi	t0, t0, 1
 	addi	t1, x0, PURPLE		# settings
 	sb	t1, 0(t0)
+	
+	# fill player sprites
+	la	t0, PLAYER
+	addi	t1, x0, 0x53
+	sb	t1, P_DOWN_OFF(t0)	
+	addi	t2, t0, P_DOWN_OFF
+	addi	t2, t2, 1
+	li	t1, 0x00898989
+	sw	t1, 0(t2)
+	li	t1, 0xA9FA00FA
+	sw	t1, 4(t2)
+	li	t1, 0x030303FA
+	sw	t1, 8(t2)
+	li	t1, 0x030303
+	sw	t1, 12(t2)
+	
+	addi	t1, x0, 0x53
+	sb	t1, P_UP_OFF(t0)
+	addi	t2, t0, P_UP_OFF
+	addi	t2, t2, 1
+	li	t1, 0x89898989
+	sw	t1, 0(t2)
+	li	t1, 0xFAFA8989
+	sw	t1, 4(t2)
+	li	t1, 0x030303FA
+	sw	t1, 8(t2)
+	li	t1, 0x030303
+	sw	t1, 12(t2)
+	
+	addi	t1, x0, 0x53
+	sb	t1, P_LEFT_OFF(t0)
+	addi	t2, t0, P_LEFT_OFF
+	addi	t2, t2, 1
+	li	t1, 0x00898989
+	sw	t1, 0(t2)
+	li	t1, 0xFAFA89FA
+	sw	t1, 4(t2)
+	li	t1, 0x030303FA
+	sw	t1, 8(t2)
+	li	t1, 0x030303
+	sw	t1, 12(t2)
+	
+	addi	t1, x0, 0x53
+	sb	t1, P_RIGHT_OFF(t0)
+	addi	t2, t0, P_RIGHT_OFF
+	addi	t2, t2, 1
+	li	t1, 0x89898989
+	sw	t1, 0(t2)
+	li	t1, 0xFAFA00FA
+	sw	t1, 4(t2)
+	li	t1, 0x030303FA
+	sw	t1, 8(t2)
+	li	t1, 0x030303
+	sw	t1, 12(t2)
+	
+	addi	t1, x0, 0x53
+	sb	t1, P_BEHIND_OFF(t0)
 	
 	# fill PARTY_ARR and BOXES_ARR with 255
 	la	t0, PARTY_ARR
