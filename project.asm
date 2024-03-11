@@ -182,6 +182,7 @@ TITLE_STR:	.space 43		# title text displayed on title screen
 MENU_STR:	.space 5		# title text displayed on menu screen
 PARTY_STR:	.space 6		# title text displayed on party screen
 BOXES_STR:	.space 6		# title text displayed for boxes on party screen
+DEX_STR:	.space 4		# title text displayed for dex screen
 NUM_STR:	.space 6		# space to store string produced by NUM_TO_STR (6 bits for 5 digits and 0 terminator)
 
 
@@ -699,7 +700,7 @@ MENU_PAGE:
 M_SEL_BUTTON:
 	la	t0, MENU_ARR		# get address of index
 	lb	t0, 0(t0)		# get index
-	beq	t0, x0, MENU_PAGE	# 0 - dex
+	beq	t0, x0, DEX_START	# 0 - dex
 	addi	t1, x0, 1
 	beq	t0, t1, PARTY_START	# 1 - party
 	addi	t1, t1, 1
@@ -1143,6 +1144,29 @@ PARTY_MOVE_L_2:
 	# go directly to PARTY_MOVE_END
 PARTY_MOVE_END:
 	j	PARTY_UPDATE
+	
+# monster index page
+DEX_START:
+	# fill background with red
+        addi	a3, x0, RED		# set color
+        call	DRAW_BG			# fill background
+        
+        # draw title text
+        la	a2, DEX_STR		# get title string address
+        addi	a0, x0, L_SIZE
+        addi	a1, x0, L_SIZE
+        addi	a3, x0, WHITE
+        
+	call DRAW_STRING		# draw title string
+DEX_PAGE:
+	beqz	s1, DEX_PAGE		# check for interrupt
+	
+	# on interrupt
+	addi	s1, x0, 0		# clear interrupt flag
+	lw	t0, 0x100(s0)		# read keyboard input
+	addi	t1, x0, SPACE_CODE
+	beq	t0, t1, MENU_START	# if key pressed was space, go back to menu
+	j	TITLE_PAGE
 	
                 
 # interrupt service routine
@@ -2797,6 +2821,15 @@ LD_TITLE_LOOP_2:
 	addi	t1, x0, 'S'
 	sb	t1, 4(t0)
 	sb	x0, 5(t0)		# last character in array is intentionally left 0 as terminator
+	
+	la 	t0, DEX_STR
+	addi	t1, x0, 'D'
+	sb	t1, 0(t0)
+	addi	t1, x0, 'E'
+	sb	t1, 1(t0)
+	addi	t1, x0, 'X'
+	sb	t1, 2(t0)
+	sb	x0, 3(t0)		# last character in array is intentionally left 0 as terminator
 	
 	# load nums string
 	la	t0, NUM_STR
