@@ -14,9 +14,9 @@
 .eqv	P_AREA		15		# must be P_WIDTH * P_HEIGHT
 .eqv	P_OR_OFF	2		# byte offset of orientation of player in memory
 .eqv	P_DOWN_OFF	3		# byte offset of player down sprite in memory
-.eqv	P_UP_OFF	19		# byte offset of player down sprite in memory
-.eqv	P_LEFT_OFF	35		# byte offset of player down sprite in memory
-.eqv	P_RIGHT_OFF	51		# byte offset of player down sprite in memory
+.eqv	P_UP_OFF	19		# byte offset of player up sprite in memory
+.eqv	P_LEFT_OFF	35		# byte offset of player left sprite in memory
+.eqv	P_RIGHT_OFF	51		# byte offset of player right sprite in memory
 .eqv	P_BEHIND_OFF	67		# byte offset of "sprite" of pixels behind player in memory
 
 # tile dimensions
