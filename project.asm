@@ -12,6 +12,12 @@
 .eqv	P_WIDTH		3
 .eqv	P_HEIGHT	5
 .eqv	P_AREA		15		# must be P_WIDTH * P_HEIGHT
+.eqv	P_OR_OFF	2		# byte offset of orientation of player in memory
+.eqv	P_DOWN_OFF	3		# byte offset of player down sprite in memory
+.eqv	P_UP_OFF	19		# byte offset of player up sprite in memory
+.eqv	P_LEFT_OFF	35		# byte offset of player left sprite in memory
+.eqv	P_RIGHT_OFF	51		# byte offset of player right sprite in memory
+.eqv	P_BEHIND_OFF	67		# byte offset of "sprite" of pixels behind player in memory
 
 # tile dimensions
 .eqv	T_SIZE		5		# width and height of square tiles
@@ -46,19 +52,19 @@
 .eqv	PARTY_ARR_SIZE	288		# size of array of monster data structures for player party. MUST BE MON_SIZE * PARTY_SIZE
 .eqv	BOXES_ARR_SIZE	1152		# size of array of monster data structures for player boxes. MUST BE MON_SIZE * PARTY_SIZE * BOXES_COLS
 
-.eqv	MON_SPEC_SIZE	76		# monster species data structure is 28 bytes. see data segment for breakdown
+.eqv	MON_SPEC_SIZE	80		# monster species data structure is 80 bytes. see data segment for breakdown
 .eqv	DEX_SIZE	1		# total number of monster species that exist
-.eqv	MON_DEX_SIZE	76		# total size in bytes of monster index. MUST BE MON_SPEC_SIZE * DEX_SIZE
+.eqv	MON_DEX_SIZE	80		# total size in bytes of monster index. MUST BE MON_SPEC_SIZE * DEX_SIZE
 
 # byte offsets for each species entry in MON_DEX_ARR
-.eqv	SPEC_EV_OFF	11
-.eqv	SPEC_BASE_OFF	13
-.eqv	SPEC_TYPE_OFF	19
-.eqv	SPEC_CATCH_OFF	21
-.eqv	SPEC_EGG_OFF	22
-.eqv	SPEC_AB_OFF	24
-.eqv	SPEC_SPRITE_OFF	26
-.eqv	SPEC_SHINY_OFF	51
+.eqv	SPEC_EV_OFF	13
+.eqv	SPEC_BASE_OFF	15
+.eqv	SPEC_TYPE_OFF	21
+.eqv	SPEC_CATCH_OFF	23
+.eqv	SPEC_EGG_OFF	24
+.eqv	SPEC_AB_OFF	26
+.eqv	SPEC_SPRITE_OFF	28
+.eqv	SPEC_SHINY_OFF	54
 
 # byte offsets for each mon entry in PARTY_ARR and BOXES_ARR
 .eqv	MON_ITEM_OFF	1
@@ -88,6 +94,7 @@
 .eqv	D_GREEN		0x08
 .eqv	BROWN		0x89
 .eqv	MAUVE		0xA9
+.eqv	TAN		0xFA
 .eqv	WALL_COLOR	D_GREEN
 .eqv	M_SEL_COLOR	L_GRAY
 
@@ -106,8 +113,12 @@
 # 0: x coord of top of rectangle
 # 1: y coord of top of rectange
 # 2: orientation (0=down, 1=up, 2=left, 3=right)
-# 3-17: pixels behind it that can be redrawn after. amount of bytes must equal P_AREA (P_WIDTH*P_HEIGHT)
-PLAYER:		.space	18
+# 3-18: player down/forward sprite (1 byte for dimensions, rest for colors). amount of bytes must equal P_AREA (P_WIDTH*P_HEIGHT) +1
+# 19-34: player up sprite (1 byte for dimensions, rest for colors). amount of bytes must equal P_AREA (P_WIDTH*P_HEIGHT) +1
+# 35-50: player left sprite (1 byte for dimensions, rest for colors). amount of bytes must equal P_AREA (P_WIDTH*P_HEIGHT) +1
+# 51-66: player right sprite (1 byte for dimensions, rest for colors). amount of bytes must equal P_AREA (P_WIDTH*P_HEIGHT) +1
+# 67-82: "sprite" of pixels behind player that can be redrawn after. amount of bytes must equal P_AREA (P_WIDTH*P_HEIGHT) +1
+PLAYER:		.space	83
 
 # player offset data
 # 0: pixel offset x - horiz pixel dist from prev tile
@@ -137,15 +148,15 @@ MENU_ARR:	.space 10
 
 # monster species array for index
 # species data structure is 28 bytes and is broken down as follows:
-# 0-10: species name (10 chars and 0 as terminator byte)
-# 11-12: EV yield (2 bits for each stat, then 4 empty bits)
-# 13-18: base stats (HP, ATK, DEF, SPA, SPD, SPE) max 255 each
-# 19-20: types 1 and 2 (5 bits each, will be equal if only one type)
-# 21: catch rate
-# 22-23: egg groups 1 and 2
-# 24-25: ability indices
-# 26-50: sprite colors (5x5)
-# 51-75: shiny sprite colors (5x5)
+# 0-12: species name (12 chars and 0 as terminator byte)
+# 13-14: EV yield (2 bits for each stat, then 4 empty bits)
+# 15-20: base stats (HP, ATK, DEF, SPA, SPD, SPE) max 255 each
+# 21-22: types 1 and 2 (5 bits each, will be equal if only one type)
+# 23: catch rate
+# 24-25: egg groups 1 and 2
+# 26-27: ability indices
+# 28-53: sprite dimensions and colors (5x5)
+# 54-79: shiny sprite dimensions and colors (5x5)
 MON_DEX_ARR:	.space	MON_DEX_SIZE
 
 # monster arrays for player party and boxes. sizes specified above
@@ -356,7 +367,7 @@ W_P_MOVE_RIGHT:
 	lb	t3, 0(t2)		# load player x
 	
 	# get max possible x
-	addi	t4, x0, WIDTH	
+	addi	t4, x0, WIDTH
 	addi	t4, t4, -P_WIDTH
 	beq	t3, t4, WORLD_UPDATE	# if player x already WIDTH-P_WIDTH, can't move right
 	
@@ -865,25 +876,15 @@ P_DRAW_L_DEX_IND2:
 	lb	t1, MON_DATA_OFF(s2)
 	andi	t1, t1, 4		# mask shiny bit
 	bnez	t1, P_DRAW_L_SHINY
-	addi	t2, s3, SPEC_SPRITE_OFF	# get address of start of sprite
+	addi	a2, s3, SPEC_SPRITE_OFF	# get address of start of sprite
 	j	P_DRAW_L_DEX2
 P_DRAW_L_SHINY:
-	addi	t2, s3, SPEC_SHINY_OFF	# get address of start of shiny sprite
+	addi	a2, s3, SPEC_SHINY_OFF	# get address of start of shiny sprite
 P_DRAW_L_DEX2:
 	# set start coords and end coords for drawing mon sprite
 	addi	a1, a4, -PARTY_RECT_H	# start y
 	addi	a0, a0, 1		# start x
-	addi	a2, a0, 5		# end x
-	addi	a4, a1, 5		# end y
-P_DRAW_L_DEX_LP:			# lp = loop
-	lb	a3, 0(t2)		# get color
-	call	DRAW_DOT
-	addi	t2, t2, 1		# inc byte address
-	addi	a0, a0, 1		# inc x
-	blt	a0, a2, P_DRAW_L_DEX_LP	# check if x is end of line
-	addi	a0, a0, -5		# reset x
-	addi	a1, a1, 1		# inc y
-	blt	a1, a4, P_DRAW_L_DEX_LP	# check if y is end of rect
+	call	DRAW_SPRITE
 	
 	# draw mon level
 	addi	a0, a0, 6
@@ -1012,25 +1013,15 @@ P_B_L_DEX_IND2:
 	lb	t1, MON_DATA_OFF(s2)
 	andi	t1, t1, 4		# mask shiny bit
 	bnez	t1, P_B_L_SHINY
-	addi	t2, s3, SPEC_SPRITE_OFF	# get address of start of sprite
+	addi	a2, s3, SPEC_SPRITE_OFF	# get address of start of sprite
 	j	P_B_L_DRAW
 P_B_L_SHINY:
-	addi	t2, s3, SPEC_SHINY_OFF	# get address of start of shiny sprite
+	addi	a2, s3, SPEC_SHINY_OFF	# get address of start of shiny sprite
 P_B_L_DRAW:
 	# set start coords and end coords for drawing mon sprite
 	addi	a1, a4, -PARTY_RECT_H	# start y
 	addi	a0, a0, 1		# start x
-	addi	a2, a0, 5		# end x
-	addi	a4, a1, 5		# end y
-P_B_L_DRAW_LP:				# lp = loop
-	lb	a3, 0(t2)		# get color
-	call	DRAW_DOT
-	addi	t2, t2, 1		# inc byte address
-	addi	a0, a0, 1		# inc x
-	blt	a0, a2, P_B_L_DRAW_LP	# check if x is end of line
-	addi	a0, a0, -5		# reset x
-	addi	a1, a1, 1		# inc y
-	blt	a1, a4, P_B_L_DRAW_LP	# check if y is end of rect
+	call	DRAW_SPRITE
 	addi	a1, a1, 2		# reset y
 	addi	a2, a2, 1		# reset end x
 P_B_MON_END:
@@ -1160,157 +1151,33 @@ ISR:
 	mret
 	
 # draw player on screen using coordinates in memory
-# modifies t0, t1, t2, t3, t4, t5, a0, a1, a2, a3, a4
+# modifies t0, t1, t2, t3, a0, a1, a2, a3, a4
 DRAW_PLAYER:
 	addi	sp, sp, -4
 	sw	ra, 0(sp)
 	
-	la	t3, PLAYER		# get address of player coords
-	# draw body
-	lb	a0, 0(t3)		# player x coord
-	lb	a1, 1(t3)		# player y coord
-	addi	a1, a1, 3
-	addi	a2, a0, P_WIDTH
-	addi	a2, a2, -1
-	addi	a4, a1, 1
-	addi	a3, x0, BLUE
-	call	DRAW_RECT
-	
-	# draw head based on orientation
-	lb	t2, 2(t3)		# get player orientation
-	addi	t5, x0, 1
-	beq	t2, t5, DP_OR_UP	# player orientation up
-	addi	t5, t5, 1
-	beq	t2, t5, DP_OR_LEFT	# player orientation left
-	addi	t5, t5, 1
-	beq	t2, t5, DP_OR_RIGHT	# player orientation right
-DP_OR_DOWN:
-	# draw hair
-	lb	a0, 0(t3)		# player x coord
-	lb	a1, 1(t3)		# player y coord
-	addi	a2, a0, P_WIDTH
-	addi	a2, a2, -1
-	addi	a3, x0, BROWN
-	call	DRAW_HORIZ_LINE
-	
-	#draw face
-	lb	a0, 0(t3)		# player x coord
-	lb	a1, 1(t3)		# player y coord
-	addi	a1, a1, 1
-	addi	a2, a0, P_WIDTH
-	addi	a2, a2, -1
-	addi	a4, a1, 1
-	addi	a3, x0, WHITE
-	call	DRAW_RECT
-	
-	#draw face features
-	lb	a0, 0(t3)		# player x coord
-	lb	a1, 1(t3)		# player y coord
-	addi	a1, a1, 1
-	addi	a3, x0, BLACK
-	call	DRAW_DOT
-	
-	addi	a0, a0, 2
-	call	DRAW_DOT
-	
-	addi	a0, a0, -1
-	addi	a1, a1, 1
-	addi	a3, x0, RED
-	call	DRAW_DOT
-	j	DP_OR_END
-DP_OR_UP:
-	#draw hair
-	lb	a0, 0(t3)		# player x coord
-	lb	a1, 1(t3)		# player y coord
-	addi	a2, a0, P_WIDTH
-	addi	a2, a2, -1
-	addi	a4, a1, 2
-	addi	a3, x0, BROWN
-	call	DRAW_RECT
-	
-	# draw rest of head
-	lb	a0, 0(t3)		# player x coord
-	lb	a1, 1(t3)		# player y coord
-	addi	a1, a1, 2
-	addi	a2, a0, P_WIDTH
-	addi	a2, a2, -1
-	addi	a3, x0, WHITE
-	call	DRAW_HORIZ_LINE
-	j	DP_OR_END
-DP_OR_LEFT:
-	#draw face
-	lb	a0, 0(t3)		# player x coord
-	lb	a1, 1(t3)		# player y coord
-	addi	a1, a1, 1
-	addi	a2, a0, P_WIDTH
-	addi	a2, a2, -1
-	addi	a4, a1, 1
-	addi	a3, x0, WHITE
-	call	DRAW_RECT
-
-	# draw hair
-	lb	a0, 0(t3)		# player x coord
-	lb	a1, 1(t3)		# player y coord
-	addi	a2, a0, P_WIDTH
-	addi	a2, a2, -1
-	addi	a3, x0, BROWN
-	call	DRAW_HORIZ_LINE
-	
-	lb	a0, 0(t3)		# player x coord
-	lb	a1, 1(t3)		# player y coord
-	addi	a0, a0, P_WIDTH
-	addi	a0, a0, -1
-	addi	a1, a1, 1
-	call	DRAW_DOT
-	
-	#draw face features
-	lb	a0, 0(t3)		# player x coord
-	lb	a1, 1(t3)		# player y coord
-	addi	a1, a1, 1
-	addi	a3, x0, BLACK
-	call	DRAW_DOT
-	
-	addi	a1, a1, 1
-	addi	a3, x0, RED
-	call	DRAW_DOT
-	j	DP_OR_END
-DP_OR_RIGHT:
-	#draw face
-	lb	a0, 0(t3)		# player x coord
-	lb	a1, 1(t3)		# player y coord
-	addi	a1, a1, 1
-	addi	a2, a0, P_WIDTH
-	addi	a2, a2, -1
-	addi	a4, a1, 1
-	addi	a3, x0, WHITE
-	call	DRAW_RECT
-
-	# draw hair
-	lb	a0, 0(t3)		# player x coord
-	lb	a1, 1(t3)		# player y coord
-	addi	a2, a0, P_WIDTH
-	addi	a2, a2, -1
-	addi	a3, x0, BROWN
-	call	DRAW_HORIZ_LINE
-	
-	lb	a0, 0(t3)		# player x coord
-	lb	a1, 1(t3)		# player y coord
-	addi	a1, a1, 1
-	call	DRAW_DOT
-	
-	#draw face features
-	lb	a0, 0(t3)		# player x coord
-	lb	a1, 1(t3)		# player y coord
-	addi	a0, a0, P_WIDTH
-	addi	a0, a0, -1
-	addi	a1, a1, 1
-	addi	a3, x0, BLACK
-	call	DRAW_DOT
-	
-	addi	a1, a1, 1
-	addi	a3, x0, RED
-	call	DRAW_DOT
-	j	DP_OR_END
+	la	a2, PLAYER		# get address of player coords
+	lb	a0, 0(a2)		# get x coord
+	lb	a1, 1(a2)		# get y coord
+	lb	t0, P_OR_OFF(a2)	# get player orientation
+	addi	t1, x0, 1
+	beq	t0, t1, DP_UP		# if orientation is 1, player facing up
+	addi	t1, x0, 2
+	beq	t0, t1, DP_LEFT		# if orientation is 2, player facing left
+	addi	t1, x0, 3
+	beq	t0, t1, DP_RIGHT	# if orientation is 3, player facing right
+	addi	a2, a2, P_DOWN_OFF
+	j	DP_CALL
+DP_UP:
+	addi	a2, a2, P_UP_OFF
+	j	DP_CALL
+DP_LEFT:
+	addi	a2, a2, P_LEFT_OFF
+	j	DP_CALL
+DP_RIGHT:
+	addi	a2, a2, P_RIGHT_OFF
+DP_CALL:
+	call	DRAW_SPRITE
 DP_OR_END:
 	lw	ra, 0(sp)
 	addi	sp, sp, 4
@@ -1325,7 +1192,8 @@ READ_PLAYER:
 	la	t3, PLAYER		# get address of player coords
 	
 	# read colors of pixels where player will be
-	addi	t2, t3, 3		# get address of start of array of pixels
+	addi	t2, t3, P_BEHIND_OFF	# get address of start of array of pixels
+	addi	t2, t2, 1		# "
 	lb	a0, 0(t3)		# player x coord
 	lb	a1, 1(t3)		# player y coord
 	addi	t4, t2, P_AREA		# get end of array
@@ -1345,26 +1213,17 @@ P_READ_LOOP:
 	ret
 	
 # clear player and replace with previous background colors
-# modifies t0, t1, t2, t3, t4, a0, a1, a3
+# modifies t0, t1, t2, t3, a0, a1, a2, a3, a4
 # a0 and a1 must start as player topleft coords
+# at end, a0 is unmodified and a1 is y coord below bottom of player sprite
 CLEAR_PLAYER:
 	addi	sp, sp, -4
 	sw	ra, 0(sp)
-	
+	# CHANGE: use draw_sprite
 	# fill the pixels with bg colors
-	la	t3, PLAYER
-	addi	t3, t3, 3		# initialize pointer to colors array
-	addi	t2, t3, P_AREA		# get end of array
-	addi	t4, a0, P_WIDTH		# get x limit for drawing player
-P_CLEAR_LOOP:
-	lb	a3, 0(t3)		# get color at dot
-	call	DRAW_DOT		# draw dot where player was
-	addi	t3, t3, 1		# increment pointer to next
-	addi	a0, a0, 1		# increment x read
-	blt	a0, t4, P_CLEAR_LOOP	# if not too far right, go to next loop
-	addi	a0, a0, -P_WIDTH	# if too far right, revert x to first pos and inc y
-	addi	a1, a1, 1
-	blt	t3, t2, P_CLEAR_LOOP	# continue drawing until reach bottom of player
+	la	a2, PLAYER		# player address
+	addi	a2, a2, P_BEHIND_OFF	# address of "sprite" of colors behind player
+	call	DRAW_SPRITE		# draw these colors
 	
 	lw	ra, 0(sp)
 	addi	sp, sp, 4
@@ -1459,6 +1318,34 @@ DRAW_TILE:
 	blt	a1, t5, LOAD_W_LOOP	# check if all tiles have been drawn
 
 	# all tiles drawn - done	
+	lw	ra, 0(sp)
+	addi	sp, sp, 4
+	ret
+	
+# draw (rectangular) sprite with topleft at (a0, a1) with address in a2
+# in memory, sprite is first byte: 4 LSB x dimension, 4 MSB y dimension, followed by bytes for colors
+# modifies t0, t1, t2, t3, a0, a1, a2, a3, a4
+# on ret, a0 is unmodified, a1 and a4 are y pixel below bottom of sprite, a2 is x pixel after right end of sprite
+DRAW_SPRITE:
+	addi	sp, sp, -4
+	sw	ra, 0(sp)
+	
+	addi	t2, a2, 1		# save address of colors
+	lb	t3, 0(a2)		# get dimensions
+	srli	a4, t3, 4		# get y dimension
+	add	a4, a1, a4		# get end y
+	andi	t3, t3, 0xF		# get x dimension - t3 because used in loop
+	add	a2, a0, t3		# get end x
+DRAW_SPRITE_LP:
+	lb	a3, 0(t2)		# get color for this pixel
+	addi	t2, t2, 1		# inc address
+	call	DRAW_DOT		# fill pixel
+	addi	a0, a0, 1		# go to next x
+	blt	a0, a2, DRAW_SPRITE_LP	# if not at end of row, draw next dot
+	sub	a0, a0, t3		# reset x
+	addi	a1, a1, 1		# go to next y
+	blt	a1, a4, DRAW_SPRITE_LP	# if not at end of sprite, draw next dot
+	
 	lw	ra, 0(sp)
 	addi	sp, sp, 4
 	ret
@@ -2944,6 +2831,51 @@ LD_TITLE_LOOP_2:
 	addi	t1, x0, PURPLE		# settings
 	sb	t1, 0(t0)
 	
+	# fill player sprites
+	la	t0, PLAYER	
+	addi	t2, t0, P_DOWN_OFF
+	li	t1, 0x89898953		# 0x53 is dimensions, rest are colors
+	sw	t1, 0(t2)
+	li	t1, 0xFA00FA00
+	sw	t1, 4(t2)
+	li	t1, 0x0303FAA9
+	sw	t1, 8(t2)
+	li	t1, 0x03030303
+	sw	t1, 12(t2)
+	
+	addi	t2, t0, P_UP_OFF
+	li	t1, 0x89898953		# 0x53 is dimensions, rest are colors
+	sw	t1, 0(t2)
+	li	t1, 0xFA898989
+	sw	t1, 4(t2)
+	li	t1, 0x0303FAFA
+	sw	t1, 8(t2)
+	li	t1, 0x03030303
+	sw	t1, 12(t2)
+	
+	addi	t2, t0, P_LEFT_OFF
+	li	t1, 0x89898953		# 0x53 is dimensions, rest are colors
+	sw	t1, 0(t2)
+	li	t1, 0xFA89FA00
+	sw	t1, 4(t2)
+	li	t1, 0x0303FAFA
+	sw	t1, 8(t2)
+	li	t1, 0x03030303
+	sw	t1, 12(t2)
+	
+	addi	t2, t0, P_RIGHT_OFF
+	li	t1, 0x89898953		# 0x53 is dimensions, rest are colors
+	sw	t1, 0(t2)
+	li	t1, 0xFA00FA89
+	sw	t1, 4(t2)
+	li	t1, 0x0303FAFA
+	sw	t1, 8(t2)
+	li	t1, 0x03030303
+	sw	t1, 12(t2)
+	
+	addi	t1, x0, 0x53
+	sb	t1, P_BEHIND_OFF(t0)
+	
 	# fill PARTY_ARR and BOXES_ARR with 255
 	la	t0, PARTY_ARR
 	addi	t1, x0, 0xFF
@@ -3028,7 +2960,10 @@ LD_PARTY_LOOP:
 	addi	t1, x0, 0x0 # CHANGE WHEN HAVE LIST
 	sh	t1, 0(t2)
 	addi	t2, t0, SPEC_SPRITE_OFF	# address of sprite colors
-	# store colors for sprite
+	# store dimensions and colors for sprite
+	addi	t1, x0, 0x55		# dimensions
+	sb	t1, 0(t2)		# store dimensions
+	addi	t2, t2, 1		# inc to addr for colors
 	addi	t1, x0, YELLOW
 	addi	t3, t2, 25		# t2=counter, this is max
 PIK_SPRITE_LOOP:
@@ -3037,6 +2972,7 @@ PIK_SPRITE_LOOP:
 	blt	t2, t3, PIK_SPRITE_LOOP
 	
 	addi	t2, t0, SPEC_SPRITE_OFF
+	addi	t2, t2, 1
 	addi	t1, x0, BLACK
 	sb	t1, 0(t2)
 	sb	t1, 4(t2)
@@ -3054,8 +2990,11 @@ PIK_SPRITE_LOOP:
 	sb	t1, 24(t2)
 	addi	t1, x0, MAUVE
 	sb	t1, 22(t2)
-	# store colors for shiny sprite
+	# store dimensions colors for shiny sprite
 	addi	t2, t0, SPEC_SHINY_OFF
+	addi	t1, x0, 0x55		# dimensions
+	sb	t1, 0(t2)		# store dimensions
+	addi	t2, t2, 1		# inc to addr for colors
 	addi	t1, x0, ORANGE
 	addi	t3, t2, 25		# set new max
 PIK_SHINY_LOOP:
@@ -3064,6 +3003,7 @@ PIK_SHINY_LOOP:
 	blt	t2, t3, PIK_SHINY_LOOP
 	
 	addi	t2, t0, SPEC_SHINY_OFF
+	addi	t2, t2, 1
 	addi	t1, x0, BLACK
 	sb	t1, 0(t2)
 	sb	t1, 4(t2)
