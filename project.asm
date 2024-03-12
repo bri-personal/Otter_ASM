@@ -95,6 +95,8 @@
 .eqv	BROWN		0x89
 .eqv	MAUVE		0xA9
 .eqv	TAN		0xFA
+.eqv 	SCARLET		0xA0
+.eqv	GOLD		0xF8
 .eqv	WALL_COLOR	D_GREEN
 .eqv	M_SEL_COLOR	L_GRAY
 
@@ -912,8 +914,47 @@ P_DRAW_L_LV:
 	
 	addi	a0, x0, L_SIZE		# reset x
 	addi	a0, a0, -2		# "
-	addi	a1, a1, 7		# move y back to where it was at end of drawing rect
+	addi	a1, a1, 6		# move y back to where it was at end of drawing rect
 	
+	# draw HP bar
+	# save coords before dividing
+	mv	t3, a0			# save x coord
+	mv	t4, a1			# save y coord
+	# multiply and divide
+	# length of line: RECT_W x Current HP / Max HP
+	lhu	a1, MON_HP_OFF(s2)
+	beqz	a1, P_DRAW_L_MON_RESET	# if HP=0, don't draw line
+	addi	a0, x0, PARTY_RECT_W
+	call	MULTIPLY
+	lhu	a1, MON_STATS_OFF(s2)
+	call	DIVIDE
+	# now a1 is proper length
+	# check hp for colors
+	addi	t0, x0, PARTY_RECT_W	# get width
+	srli	t0, t0, 1		# half of width
+	bgt	a1, t0, P_DRAW_L_HP1
+	srli	t0, t0, 1		# quarter of width
+	bgt	a1, t0, P_DRAW_L_HP2
+	srli	t0, t0, 1		# eigth of width
+	bgt	a1, t0, P_DRAW_L_HP3
+	addi	a3, x0, SCARLET		# less than an eigth
+	j	P_DRAW_L_HP_END
+P_DRAW_L_HP1:
+	addi	a3, x0, GREEN		# set color
+	j	P_DRAW_L_HP_END
+P_DRAW_L_HP2:
+	addi	a3, x0, GOLD
+	j	P_DRAW_L_HP_END
+P_DRAW_L_HP3:
+	addi	a3, x0, ORANGE
+P_DRAW_L_HP_END:
+	mv	a0, t3			# reset x
+	add	a2, a0, a1		# set end x
+	mv	a1, t4			# reset y
+	call	DRAW_HORIZ_LINE		# draw line
+P_DRAW_L_MON_RESET:
+	mv	a0, t3			# reset x again. a1 hasn't changed
+	addi	a1, t4, 1		# set a1 to match if no mon is drawn
 P_DRAW_L_MON_END:
 	addi	a1, a1, 1		# move y to start of next rect
 	addi	t6, t6, -1		# dec counter
@@ -2923,8 +2964,33 @@ LD_PARTY_LOOP:
 	sb	x0, 0(t0)
 	addi	t1, x0, 1
 	sb	t1, MON_DATA_OFF(t0)
-	addi	t1, x0, 5
+	addi	t1, x0, 1
 	sb	t1, MON_LEVEL_OFF(t0)
+	addi	t1, x0, 100
+	sb	t1, MON_HP_OFF(t0)
+	sb	t1, MON_STATS_OFF(t0)
+	
+	addi	t0, t0, MON_SIZE
+	sb	x0, 0(t0)
+	addi	t1, x0, 4
+	sb	t1, MON_DATA_OFF(t0)
+	addi	t1, x0, 5	
+	sb	t1, MON_LEVEL_OFF(t0)
+	addi	t1, x0, 49
+	sb	t1, MON_HP_OFF(t0)
+	addi	t1, x0, 100
+	sb	t1, MON_STATS_OFF(t0)
+	
+	addi	t0, t0, MON_SIZE
+	sb	x0, 0(t0)
+	addi	t1, x0, 4
+	sb	t1, MON_DATA_OFF(t0)
+	addi	t1, x0, 10
+	sb	t1, MON_LEVEL_OFF(t0)
+	addi	t1, x0, 24
+	sb	t1, MON_HP_OFF(t0)
+	addi	t1, x0, 100
+	sb	t1, MON_STATS_OFF(t0)
 	
 	addi	t0, t0, MON_SIZE
 	sb	x0, 0(t0)
@@ -2932,6 +2998,21 @@ LD_PARTY_LOOP:
 	sb	t1, MON_DATA_OFF(t0)
 	addi	t1, x0, 100	
 	sb	t1, MON_LEVEL_OFF(t0)
+	addi	t1, x0, 11
+	sb	t1, MON_HP_OFF(t0)
+	addi	t1, x0, 100
+	sb	t1, MON_STATS_OFF(t0)
+	
+	addi	t0, t0, MON_SIZE
+	sb	x0, 0(t0)
+	addi	t1, x0, 4
+	sb	t1, MON_DATA_OFF(t0)
+	addi	t1, x0, 100	
+	sb	t1, MON_LEVEL_OFF(t0)
+	addi	t1, x0, 0
+	sb	t1, MON_HP_OFF(t0)
+	addi	t1, x0, 100
+	sb	t1, MON_STATS_OFF(t0)
 	
 	la	t0, BOXES_ARR
 	sb	x0, 0(t0)

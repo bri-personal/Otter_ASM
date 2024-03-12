@@ -28,8 +28,8 @@ def byte_color(r_in, g_in, b_in):
     return res
 
 
-r = 0xf7
-g = 0xdc
-b = 0xb4
+r = 0xfd
+g = 0xd0
+b = 0x17
 res=byte_color(r,g,b)
 print(res)
