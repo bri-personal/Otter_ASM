@@ -802,8 +802,7 @@ PARTY_START:
 	call	DRAW_BG
 	
 	# draw party title text
-	addi	a0, x0, L_SIZE		# set initial x
-	addi	a0, a0, -2		# "
+	addi	a0, x0, 3		# set initial x
 	addi	a1, x0, 1		# set initial y
 	addi	a3, x0, WHITE		# set color
 	la	a2, PARTY_STR		# get string address
@@ -1194,10 +1193,9 @@ DEX_START:
         
         # draw title text
         la	a2, DEX_STR		# get title string address
-        addi	a0, x0, L_SIZE
-        addi	a1, x0, L_SIZE
+        addi	a0, x0, 3		# set initial x
+	addi	a1, x0, 1		# set initial y
         addi	a3, x0, WHITE
-        
 	call DRAW_STRING		# draw title string
 DEX_PAGE:
 	beqz	s1, DEX_PAGE		# check for interrupt
