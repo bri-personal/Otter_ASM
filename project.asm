@@ -1196,12 +1196,23 @@ DEX_START:
         addi	a3, x0, WHITE
 	call DRAW_STRING		# draw title string
 	
+	# draw line
+	addi	a0, x0, WIDTH		# set initial x
+	srli	a0, a0, 1		# "
+	addi	a0, a0, -2		# "
+	addi	a1, x0, 2		# set initial y
+	addi	a2, x0, HEIGHT
+	addi	a2, a2, -2
+	call	DRAW_VERT_LINE
+	
 	la	s3, MON_DEX_ARR		# address for current species being shown
-	addi	t6, x0, 1			# counter for boxes
+	addi	t6, x0, 1			# counter for numbers in boxes
+	addi	t5, x0, PARTY_SIZE	# counter to draw rects
 DEX_UPDATE:
 	# draw boxes
 	addi	a0, x0, 3		# set initial x
 	addi	a1, x0, 7		# set initial y
+DEX_BOX_DRAW_LP:
 	addi	a2, a0, PARTY_RECT_W	# set other corner
 	addi	a4, a1, PARTY_RECT_H	# "
 	addi	a3, x0, WHITE
@@ -1216,6 +1227,13 @@ DEX_UPDATE:
 	addi	a1, t4, -PARTY_RECT_H
 	addi	a3, x0, BLACK
 	call	DRAW_STRING
+	
+	addi	a0, x0, 3		# reset x
+	addi	a1, a1, PARTY_RECT_H	# set next y
+	addi	a1, a1, 1		# "
+	addi	t6, t6, 1		# inc number to draw
+	addi	t5, t5, -1		# dec rect counter
+	bgtz	t5, DEX_BOX_DRAW_LP	# check if room to draw next box
 DEX_PAGE:
 	beqz	s1, DEX_PAGE		# check for interrupt
 	
