@@ -1206,9 +1206,9 @@ DEX_START:
 	call	DRAW_VERT_LINE
 	
 	la	s3, MON_DEX_ARR		# address for current species being shown
-	addi	t6, x0, 1			# counter for numbers in boxes
-	addi	t5, x0, PARTY_SIZE	# counter to draw rects
+	addi	t6, x0, 1		# counter for numbers in boxes	
 DEX_UPDATE:
+	addi	t5, x0, PARTY_SIZE	# counter to draw rects
 	# draw boxes
 	addi	a0, x0, 3		# set initial x
 	addi	a1, x0, 7		# set initial y
@@ -1240,9 +1240,23 @@ DEX_PAGE:
 	# on interrupt
 	addi	s1, x0, 0		# clear interrupt flag
 	lw	t0, 0x100(s0)		# read keyboard input
+	addi	t1, x0, S_CODE
+	beq	t0, t1, DEX_MOVE_DOWN	# if 's' pressed, move list down
+	addi	t1, x0, W_CODE
+	beq	t0, t1, DEX_MOVE_UP	# if 'w' pressed, move list up
 	addi	t1, x0, SPACE_CODE
 	beq	t0, t1, MENU_START	# if key pressed was space, go back to menu
 	j	DEX_PAGE
+DEX_MOVE_DOWN:
+	addi	t6, t6, -PARTY_SIZE	# get new first number
+	addi	t6, t6, 1		# "
+	j	DEX_UPDATE
+DEX_MOVE_UP:
+	addi	t6, t6, -PARTY_SIZE	# get new first number
+	addi	t6, t6, -1		# "
+	bgtz	t6, DEX_UPDATE
+	addi	t6, t6, 1		# if already at 1, can't go lower
+	j	DEX_UPDATE
 	
                 
 # interrupt service routine
