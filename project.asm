@@ -829,10 +829,8 @@ PARTY_UPDATE:
 	addi	t6, x0, PARTY_SIZE	# counter for drawing rects, DONT CHANGE UNLESS DEC'ing COUNT
 	
 	# draw rectangles for each member of party
-	addi	a0, x0, L_SIZE		# set initial x
-	addi	a0, a0, -2		# "
-	addi	a1, x0, L_SIZE		# set initial y
-	addi	a1, a1, 2		# "
+	addi	a0, x0, 3		# set initial x
+	addi	a1, x0, 7		# set initial y
 P_DRAW_LOOP:
 	li	t0, 0x07FF0000		# get bitmask for col index
 	and	t0, t5, t0		# get col index
@@ -1197,6 +1195,27 @@ DEX_START:
 	addi	a1, x0, 1		# set initial y
         addi	a3, x0, WHITE
 	call DRAW_STRING		# draw title string
+	
+	la	s3, MON_DEX_ARR		# address for current species being shown
+	addi	t6, x0, 1			# counter for boxes
+DEX_UPDATE:
+	# draw boxes
+	addi	a0, x0, 3		# set initial x
+	addi	a1, x0, 7		# set initial y
+	addi	a2, a0, PARTY_RECT_W	# set other corner
+	addi	a4, a1, PARTY_RECT_H	# "
+	addi	a3, x0, WHITE
+	call	DRAW_RECT
+	mv	t3, a0
+	mv	t4, a1
+	
+	mv	a0, t6			# get number to draw
+	call	NUM_TO_STR
+	# now a2 is address for this number string
+	addi	a0, t3, 1
+	addi	a1, t4, -PARTY_RECT_H
+	addi	a3, x0, BLACK
+	call	DRAW_STRING
 DEX_PAGE:
 	beqz	s1, DEX_PAGE		# check for interrupt
 	
