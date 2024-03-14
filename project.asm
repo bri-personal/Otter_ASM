@@ -1242,7 +1242,7 @@ DEX_PAGE:
 	lw	t0, 0x100(s0)		# read keyboard input
 	addi	t1, x0, SPACE_CODE
 	beq	t0, t1, MENU_START	# if key pressed was space, go back to menu
-	j	TITLE_PAGE
+	j	DEX_PAGE
 	
                 
 # interrupt service routine
