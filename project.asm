@@ -1205,6 +1205,7 @@ DEX_START:
 	addi	a2, a2, -2
 	call	DRAW_VERT_LINE
 	
+	addi	s2, x0, PARTY_SIZE	# selector index for rects: number selected is t6 - s2
 	la	s3, MON_DEX_ARR		# address for current species being shown
 	addi	t6, x0, 1		# counter for numbers in boxes	
 DEX_UPDATE:
@@ -1215,7 +1216,12 @@ DEX_UPDATE:
 DEX_BOX_DRAW_LP:
 	addi	a2, a0, PARTY_RECT_W	# set other corner
 	addi	a4, a1, PARTY_RECT_H	# "
-	addi	a3, x0, WHITE
+	beq	t5, s2, DEX_BOX_DRAW_SEL # check if this box is selected
+	addi	a3, x0, WHITE		# not selected
+	j	DEX_BOX_DRAW_CONT
+DEX_BOX_DRAW_SEL:
+	addi	 a3, x0, M_SEL_COLOR	# selected
+DEX_BOX_DRAW_CONT:
 	call	DRAW_RECT
 	mv	t3, a0
 	mv	t4, a1
@@ -1248,8 +1254,13 @@ DEX_PAGE:
 	beq	t0, t1, MENU_START	# if key pressed was space, go back to menu
 	j	DEX_PAGE
 DEX_MOVE_DOWN:
-	addi	t6, t6, -PARTY_SIZE	# get new first number
-	addi	t6, t6, 1		# "
+	# first, see if selection index can be moved down
+	addi	t6, t6, -PARTY_SIZE	# reset first number
+	addi	s2, s2, -1		# go to lower box
+	bgtz	s2, DEX_UPDATE		# make sure not too low
+	addi	s2, s2, 1		# reset if too low
+	# if not, move down numbers in boxes
+	addi	t6, t6, 1		# inc first number
 	j	DEX_UPDATE
 DEX_MOVE_UP:
 	addi	t6, t6, -PARTY_SIZE	# get new first number
@@ -1258,7 +1269,7 @@ DEX_MOVE_UP:
 	addi	t6, t6, 1		# if already at 1, can't go lower
 	j	DEX_UPDATE
 	
-                
+	
 # interrupt service routine
 ISR:
 	addi	s1, x0, 1		# set interrupt flag high
