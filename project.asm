@@ -1258,13 +1258,20 @@ DEX_MOVE_DOWN:
 	addi	t6, t6, -PARTY_SIZE	# reset first number
 	addi	s2, s2, -1		# go to lower box
 	bgtz	s2, DEX_UPDATE		# make sure not too low
-	addi	s2, s2, 1		# reset if too low
 	# if not, move down numbers in boxes
+	addi	s2, s2, 1		# reset if too low
 	addi	t6, t6, 1		# inc first number
 	j	DEX_UPDATE
 DEX_MOVE_UP:
-	addi	t6, t6, -PARTY_SIZE	# get new first number
-	addi	t6, t6, -1		# "
+	# first, see if selection index can be moved up
+	addi	t6, t6, -PARTY_SIZE	# reset first number
+	addi	s2, s2, 1		# go to upper box
+	addi	t0, s2, -PARTY_SIZE	# number to check
+	blez	t0, DEX_UPDATE		# make sure not too high
+	# if not, move up numbers in boxes
+	addi	s2, s2, -1		# reset if too high
+	addi	t6, t6, -1		# dec first number
+	# first number may not be <1
 	bgtz	t6, DEX_UPDATE
 	addi	t6, t6, 1		# if already at 1, can't go lower
 	j	DEX_UPDATE
