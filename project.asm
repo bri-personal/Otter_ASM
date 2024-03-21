@@ -1265,6 +1265,34 @@ DEX_BOX_DRAW_CONT:
 	mv	a2, s3			# get string address
 	addi	a3, x0, WHITE		# set color
 	call	DRAW_STRING
+	# draw species sprites with rects around them (assumes 5x5 sprites!)
+	# draw rect behind normal sprite
+	addi	a0, x0, DEX_DATA_X	# set initial x
+	addi	a1, x0, 8		# set initial y
+	addi	a2, a0, 6		# set other corner
+	addi	a4, a1, 6		# "
+	addi	a3, x0, WHITE		# set color
+	call	DRAW_RECT
+	# now a0 is same, a1 is below 7x7 rect and a2 is to right of 7x7 rect
+	# draw normal sprite
+	addi	a0, a0, 1		# set initial x
+	addi	a1, a1, -6		# set initial y
+	addi	a2, s3, SPEC_SPRITE_OFF	# get sprite address
+	call	DRAW_SPRITE
+	# now a0 is same, a1 is below 5x5 sprite and a2 is to right of 5x5 sprite
+	# draw rect behind shiny sprite
+	addi	a0, a0, 7		# set next x
+	addi	a1, a1, -6		# set next y
+	addi	a2, a0, 6		# set other corner
+	addi	a4, a1, 6		# "
+	addi	a3, x0, GOLD		# set color
+	call	DRAW_RECT
+	# now a0 is same, a1 is below 7x7 rect and a2 is to right of 7x7 rect
+	# draw shiny sprite
+	addi	a0, a0, 1		# set initial x
+	addi	a1, a1, -6		# set initial y
+	addi	a2, s3, SPEC_SHINY_OFF	# get sprite address
+	call	DRAW_SPRITE
 DEX_PAGE:
 	beqz	s1, DEX_PAGE		# check for interrupt
 	
@@ -1492,7 +1520,7 @@ DRAW_TILE:
 	
 # draw (rectangular) sprite with topleft at (a0, a1) with address in a2
 # in memory, sprite is first byte: 4 LSB x dimension, 4 MSB y dimension, followed by bytes for colors
-# modifies t0, t1, t2, t3, a0, a1, a2, a3, a4
+# modifies t0, t1, t2, t3, a1, a2, a3, a4
 # on ret, a0 is unmodified, a1 and a4 are y pixel below bottom of sprite, a2 is x pixel after right end of sprite
 DRAW_SPRITE:
 	addi	sp, sp, -4
