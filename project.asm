@@ -50,6 +50,7 @@
 # dex screen quantities
 .eqv	DEX_RECT_W	16		# width of rects for numbers in dex screen (16+1 for 3 digits plus padding)
 .eqv	DEX_RECT_H	PARTY_RECT_H	# height of rects for numbers in dex screen
+.eqv	DEX_BOX_SIZE	6		# width and height of boxes to show sprites in dex screen
 .eqv	DEX_LINE_X	19		# x coord for line in dex screen
 .eqv	DEX_NUM_RECTS	PARTY_SIZE	# number of rects for numbers to show at once
 .eqv	DEX_DATA_X	21		# x coord of start of data "side" of dex page
@@ -1269,8 +1270,8 @@ DEX_BOX_DRAW_CONT:
 	# draw rect behind normal sprite
 	addi	a0, x0, DEX_DATA_X	# set initial x
 	addi	a1, x0, 8		# set initial y
-	addi	a2, a0, 6		# set other corner
-	addi	a4, a1, 6		# "
+	addi	a2, a0, DEX_BOX_SIZE	# set other corner
+	addi	a4, a1, DEX_BOX_SIZE	# "
 	addi	a3, x0, WHITE		# set color
 	call	DRAW_RECT
 	# now a0 is same, a1 is below 7x7 rect and a2 is to right of 7x7 rect
@@ -1281,10 +1282,11 @@ DEX_BOX_DRAW_CONT:
 	call	DRAW_SPRITE
 	# now a0 is same, a1 is below 5x5 sprite and a2 is to right of 5x5 sprite
 	# draw rect behind shiny sprite
-	addi	a0, a0, 7		# set next x
-	addi	a1, a1, -6		# set next y
-	addi	a2, a0, 6		# set other corner
-	addi	a4, a1, 6		# "
+	addi	a0, x0, DEX_DATA_X	# set initial x
+	addi	a0, a0, 8		# "
+	addi	a1, x0, 8		# set initial y
+	addi	a2, a0, DEX_BOX_SIZE	# set other corner
+	addi	a4, a1, DEX_BOX_SIZE	# "
 	addi	a3, x0, GOLD		# set color
 	call	DRAW_RECT
 	# now a0 is same, a1 is below 7x7 rect and a2 is to right of 7x7 rect
