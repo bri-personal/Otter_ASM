@@ -192,11 +192,17 @@ BOXES_ARR:	.space	BOXES_ARR_SIZE
 
 # strings - each byte is a character
 # last byte must be 0 as terminator character
-TITLE_STR:	.space 43		# title text displayed on title screen
-MENU_STR:	.space 5		# title text displayed on menu screen
-PARTY_STR:	.space 6		# title text displayed on party screen
-BOXES_STR:	.space 6		# title text displayed for boxes on party screen
-DEX_STR:	.space 4		# title text displayed for dex screen
+TITLE_STR:				# title text displayed on title screen
+	.byte	'A' 'B' 'C' 'D' 'E' 'F' 'G' 'H' 'I' 'J' 'K' 'L' 'M' 'N' 'O' 'P' 'Q' 'R' 'S' 'T' 'U' 'V' 'W' 'X' 'Y' 'Z'
+		' ' '1' '2' '3' '4' '5' '6' '7' '8' '9' '0' '.' ',' '!' '?' 'a' 0
+MENU_STR:				# title text displayed on menu screen
+	.byte	'M' 'E' 'N' 'U' 0
+PARTY_STR:				# title text displayed on party screen
+	.byte	'P' 'A' 'R' 'T' 'Y' 0
+BOXES_STR:				# title text displayed for boxes on party screen
+	.byte	'B' 'O' 'X' 'E' 'S' 0
+DEX_STR:				# title text displayed for dex screen
+	.byte	'D' 'E' 'X' 0
 NUM_STR:	.space 6		# space to store string produced by NUM_TO_STR (6 bits for 5 digits and 0 terminator)
 
 
@@ -2917,94 +2923,6 @@ DIV_END:
 LOAD_DATA:
 	addi	sp, sp, -4
 	sw	ra, 0(sp)
-	
-	# load title string
-	la	t0, TITLE_STR
-	
-	# show all letters
-	addi	t1, x0, 'A'
-	addi	t2, t0, 26
-LD_TITLE_LOOP:
-	sb	t1, 0(t0)
-	addi	t0, t0, 1
-	addi	t1, t1, 1
-	blt	t0, t2, LD_TITLE_LOOP
-	
-	addi	t1, x0, ' '
-	sb	t1, 0(t0)
-	addi	t0, t0, 1
-	
-	# show all numbers
-	addi	t2, t0, 10
-	addi	t1, x0, '0'
-LD_TITLE_LOOP_2:
-	sb	t1, 0(t0)
-	addi	t0, t0, 1
-	addi	t1, t1, 1
-	blt	t0, t2, LD_TITLE_LOOP_2
-	
-	# show punctuation and unknown
-	addi	t1, x0, '.'
-	sb	t1, 0(t0)
-	addi	t1, x0, ','
-	sb	t1, 1(t0)
-	addi	t1, x0, '!'
-	sb	t1, 2(t0)
-	addi	t1, x0, '?'
-	sb	t1, 3(t0)
-	addi	t1, x0, 'a'		# for unknown char
-	sb	t1, 4(t0)
-
-	sb	x0, 5(t0)		# last character in array is intentionally left 0 as terminator
-	
-	# load menu string
-	la	t0, MENU_STR
-	addi	t1, x0, 'M'
-	sb	t1, 0(t0)
-	addi	t1, x0, 'E'
-	sb	t1, 1(t0)
-	addi	t1, x0, 'N'
-	sb	t1, 2(t0)
-	addi	t1, x0, 'U'
-	sb	t1, 3(t0)
-	sb	x0, 4(t0)		# last character in array is intentionally left 0 as terminator
-	
-	# load party string
-	la	t0, PARTY_STR
-	addi	t1, x0, 'P'
-	sb	t1, 0(t0)
-	addi	t1, x0, 'A'
-	sb	t1, 1(t0)
-	addi	t1, x0, 'R'
-	sb	t1, 2(t0)
-	addi	t1, x0, 'T'
-	sb	t1, 3(t0)
-	addi	t1, x0, 'Y'
-	sb	t1, 4(t0)
-	sb	x0, 5(t0)		# last character in array is intentionally left 0 as terminator
-	
-	# load boxes string
-	la	t0, BOXES_STR
-	addi	t1, x0, 'B'
-	sb	t1, 0(t0)
-	addi	t1, x0, 'O'
-	sb	t1, 1(t0)
-	addi	t1, x0, 'X'
-	sb	t1, 2(t0)
-	addi	t1, x0, 'E'
-	sb	t1, 3(t0)
-	addi	t1, x0, 'S'
-	sb	t1, 4(t0)
-	sb	x0, 5(t0)		# last character in array is intentionally left 0 as terminator
-	
-	la 	t0, DEX_STR
-	addi	t1, x0, 'D'
-	sb	t1, 0(t0)
-	addi	t1, x0, 'E'
-	sb	t1, 1(t0)
-	addi	t1, x0, 'X'
-	sb	t1, 2(t0)
-	sb	x0, 3(t0)		# last character in array is intentionally left 0 as terminator
 	
 	# load nums string
 	la	t0, NUM_STR
