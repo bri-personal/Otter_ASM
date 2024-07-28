@@ -47,16 +47,25 @@
 .eqv	MENU_NUM_SQ	8		# total number of squares in menu - must be even
 .eqv	MENU_SQ_SIZE	10		# width and height of squares on menu page
 
+# dex screen quantities
+.eqv	DEX_RECT_W	16		# width of rects for numbers in dex screen (16+1 for 3 digits plus padding)
+.eqv	DEX_RECT_H	PARTY_RECT_H	# height of rects for numbers in dex screen
+.eqv	DEX_BOX_SIZE	6		# width and height of boxes to show sprites in dex screen
+.eqv	DEX_LINE_X	19		# x coord for line in dex screen
+.eqv	DEX_NUM_RECTS	PARTY_SIZE	# number of rects for numbers to show at once
+.eqv	DEX_DATA_X	21		# x coord of start of data "side" of dex page
+
 # monster quantities
 .eqv	MON_SIZE	48		# monster data structure is 48 bytes. see data segment for breakdown
 .eqv	PARTY_ARR_SIZE	288		# size of array of monster data structures for player party. MUST BE MON_SIZE * PARTY_SIZE
 .eqv	BOXES_ARR_SIZE	1152		# size of array of monster data structures for player boxes. MUST BE MON_SIZE * PARTY_SIZE * BOXES_COLS
 
 .eqv	MON_SPEC_SIZE	80		# monster species data structure is 80 bytes. see data segment for breakdown
-.eqv	DEX_SIZE	1		# total number of monster species that exist
-.eqv	MON_DEX_SIZE	80		# total size in bytes of monster index. MUST BE MON_SPEC_SIZE * DEX_SIZE
+.eqv	DEX_SIZE	2		# total number of monster species that exist
+.eqv	MON_DEX_SIZE	160		# total size in bytes of monster index. MUST BE MON_SPEC_SIZE * DEX_SIZE
 
 # byte offsets for each species entry in MON_DEX_ARR
+.eqv	SPEC_EVO_OFF	11
 .eqv	SPEC_EV_OFF	13
 .eqv	SPEC_BASE_OFF	15
 .eqv	SPEC_TYPE_OFF	21
@@ -95,6 +104,8 @@
 .eqv	BROWN		0x89
 .eqv	MAUVE		0xA9
 .eqv	TAN		0xFA
+.eqv 	SCARLET		0xA0
+.eqv	GOLD		0xF8
 .eqv	WALL_COLOR	D_GREEN
 .eqv	M_SEL_COLOR	L_GRAY
 
@@ -147,8 +158,11 @@ ALL_TILES:	.space NUM_TILES
 MENU_ARR:	.space 10
 
 # monster species array for index
+# max of 255 species (index 0 to 0xFE. 0xFF is reserved for 'empty' in party array)
 # species data structure is 28 bytes and is broken down as follows:
-# 0-12: species name (12 chars and 0 as terminator byte)
+# 0-10: species name (10 chars and 0 as terminator byte)
+# 11: species index number of monster this species evolves into, or 255 if it does not evolve
+# 12: UNUSED
 # 13-14: EV yield (2 bits for each stat, then 4 empty bits)
 # 15-20: base stats (HP, ATK, DEF, SPA, SPD, SPE) max 255 each
 # 21-22: types 1 and 2 (5 bits each, will be equal if only one type)
@@ -182,6 +196,7 @@ TITLE_STR:	.space 43		# title text displayed on title screen
 MENU_STR:	.space 5		# title text displayed on menu screen
 PARTY_STR:	.space 6		# title text displayed on party screen
 BOXES_STR:	.space 6		# title text displayed for boxes on party screen
+DEX_STR:	.space 4		# title text displayed for dex screen
 NUM_STR:	.space 6		# space to store string produced by NUM_TO_STR (6 bits for 5 digits and 0 terminator)
 
 
@@ -699,7 +714,7 @@ MENU_PAGE:
 M_SEL_BUTTON:
 	la	t0, MENU_ARR		# get address of index
 	lb	t0, 0(t0)		# get index
-	beq	t0, x0, MENU_PAGE	# 0 - dex
+	beq	t0, x0, DEX_START	# 0 - dex
 	addi	t1, x0, 1
 	beq	t0, t1, PARTY_START	# 1 - party
 	addi	t1, t1, 1
@@ -799,8 +814,7 @@ PARTY_START:
 	call	DRAW_BG
 	
 	# draw party title text
-	addi	a0, x0, L_SIZE		# set initial x
-	addi	a0, a0, -2		# "
+	addi	a0, x0, 3		# set initial x
 	addi	a1, x0, 1		# set initial y
 	addi	a3, x0, WHITE		# set color
 	la	a2, PARTY_STR		# get string address
@@ -827,10 +841,8 @@ PARTY_UPDATE:
 	addi	t6, x0, PARTY_SIZE	# counter for drawing rects, DONT CHANGE UNLESS DEC'ing COUNT
 	
 	# draw rectangles for each member of party
-	addi	a0, x0, L_SIZE		# set initial x
-	addi	a0, a0, -2		# "
-	addi	a1, x0, L_SIZE		# set initial y
-	addi	a1, a1, 2		# "
+	addi	a0, x0, 3		# set initial x
+	addi	a1, x0, 7		# set initial y
 P_DRAW_LOOP:
 	li	t0, 0x07FF0000		# get bitmask for col index
 	and	t0, t5, t0		# get col index
@@ -911,8 +923,47 @@ P_DRAW_L_LV:
 	
 	addi	a0, x0, L_SIZE		# reset x
 	addi	a0, a0, -2		# "
-	addi	a1, a1, 7		# move y back to where it was at end of drawing rect
+	addi	a1, a1, 6		# move y back to where it was at end of drawing rect
 	
+	# draw HP bar
+	# save coords before dividing
+	mv	t3, a0			# save x coord
+	mv	t4, a1			# save y coord
+	# multiply and divide
+	# length of line: RECT_W x Current HP / Max HP
+	lhu	a1, MON_HP_OFF(s2)
+	beqz	a1, P_DRAW_L_MON_RESET	# if HP=0, don't draw line
+	addi	a0, x0, PARTY_RECT_W
+	call	MULTIPLY
+	lhu	a1, MON_STATS_OFF(s2)
+	call	DIVIDE
+	# now a1 is proper length
+	# check hp for colors
+	addi	t0, x0, PARTY_RECT_W	# get width
+	srli	t0, t0, 1		# half of width
+	bgt	a1, t0, P_DRAW_L_HP1
+	srli	t0, t0, 1		# quarter of width
+	bgt	a1, t0, P_DRAW_L_HP2
+	srli	t0, t0, 1		# eigth of width
+	bgt	a1, t0, P_DRAW_L_HP3
+	addi	a3, x0, SCARLET		# less than an eigth
+	j	P_DRAW_L_HP_END
+P_DRAW_L_HP1:
+	addi	a3, x0, GREEN		# set color
+	j	P_DRAW_L_HP_END
+P_DRAW_L_HP2:
+	addi	a3, x0, GOLD
+	j	P_DRAW_L_HP_END
+P_DRAW_L_HP3:
+	addi	a3, x0, ORANGE
+P_DRAW_L_HP_END:
+	mv	a0, t3			# reset x
+	add	a2, a0, a1		# set end x
+	mv	a1, t4			# reset y
+	call	DRAW_HORIZ_LINE		# draw line
+P_DRAW_L_MON_RESET:
+	mv	a0, t3			# reset x again. a1 hasn't changed
+	addi	a1, t4, 1		# set a1 to match if no mon is drawn
 P_DRAW_L_MON_END:
 	addi	a1, a1, 1		# move y to start of next rect
 	addi	t6, t6, -1		# dec counter
@@ -1144,7 +1195,154 @@ PARTY_MOVE_L_2:
 PARTY_MOVE_END:
 	j	PARTY_UPDATE
 	
-                
+# monster index page
+DEX_START:
+	# fill background with red
+        addi	a3, x0, RED		# set color
+        call	DRAW_BG			# fill background
+        
+        # draw title text
+        la	a2, DEX_STR		# get title string address
+        addi	a0, x0, 1		# set initial x
+	addi	a1, x0, 1		# set initial y
+        addi	a3, x0, WHITE
+	call DRAW_STRING		# draw title string
+	
+	# draw line
+	addi	a0, x0, DEX_LINE_X	# set initial x
+	addi	a1, x0, 2		# set initial y
+	addi	a2, x0, HEIGHT
+	addi	a2, a2, -2
+	call	DRAW_VERT_LINE
+	
+	addi	s2, x0, DEX_NUM_RECTS	# selector index for rects: number selected is t6 - s2
+	la	s3, MON_DEX_ARR		# address for current species being shown
+	addi	t6, x0, 1		# counter for numbers in boxes	
+DEX_UPDATE:
+	addi	t5, x0, DEX_NUM_RECTS	# counter to draw rects
+	# draw boxes
+	addi	a0, x0, 1		# set initial x
+	addi	a1, x0, 7		# set initial y (5 pixels for letters, plus 2 for padding above and below)
+DEX_BOX_DRAW_LP:
+	addi	a2, a0, DEX_RECT_W	# set other corner
+	addi	a4, a1, DEX_RECT_H	# "
+	beq	t5, s2, DEX_BOX_DRAW_SEL # check if this box is selected
+	addi	a3, x0, WHITE		# not selected
+	j	DEX_BOX_DRAW_CONT
+DEX_BOX_DRAW_SEL:
+	addi	 a3, x0, M_SEL_COLOR	# selected
+DEX_BOX_DRAW_CONT:
+	call	DRAW_RECT
+	mv	t3, a0
+	mv	t4, a1
+	
+	mv	a0, t6			# get number to draw
+	call	NUM_TO_STR
+	# now a2 is address for this number string
+	addi	a0, t3, 1
+	addi	a1, t4, -DEX_RECT_H
+	addi	a3, x0, BLACK
+	call	DRAW_STRING
+	
+	addi	a0, x0, 1		# reset x
+	addi	a1, a1, DEX_RECT_H	# set next y
+	addi	a1, a1, 1		# "
+	addi	t6, t6, 1		# inc number to draw
+	addi	t5, t5, -1		# dec rect counter
+	bgtz	t5, DEX_BOX_DRAW_LP	# check if room to draw next box
+	# draw dex entry for selected species
+	# cover up old area
+	addi	a0, x0, DEX_DATA_X
+	addi	a1, x0, 1
+	addi	a2, x0, WIDTH
+	addi	a2, a2, -1
+	addi	a4, x0, HEIGHT
+	addi	a4, a4, -1
+	addi	a3, x0, RED
+	call	DRAW_RECT
+	# draw species name
+	addi	a0, x0, DEX_DATA_X	# set initial x
+	addi	a1, x0, 1		# set initial y
+	mv	a2, s3			# get string address
+	addi	a3, x0, WHITE		# set color
+	call	DRAW_STRING
+	# draw species sprites with rects around them (assumes 5x5 sprites!)
+	# draw rect behind normal sprite
+	addi	a0, x0, DEX_DATA_X	# set initial x
+	addi	a1, x0, 8		# set initial y
+	addi	a2, a0, DEX_BOX_SIZE	# set other corner
+	addi	a4, a1, DEX_BOX_SIZE	# "
+	addi	a3, x0, WHITE		# set color
+	call	DRAW_RECT
+	# now a0 is same, a1 is below 7x7 rect and a2 is to right of 7x7 rect
+	# draw normal sprite
+	addi	a0, a0, 1		# set initial x
+	addi	a1, a1, -6		# set initial y
+	addi	a2, s3, SPEC_SPRITE_OFF	# get sprite address
+	call	DRAW_SPRITE
+	# now a0 is same, a1 is below 5x5 sprite and a2 is to right of 5x5 sprite
+	# draw rect behind shiny sprite
+	addi	a0, x0, DEX_DATA_X	# set initial x
+	addi	a0, a0, 8		# "
+	addi	a1, x0, 8		# set initial y
+	addi	a2, a0, DEX_BOX_SIZE	# set other corner
+	addi	a4, a1, DEX_BOX_SIZE	# "
+	addi	a3, x0, GOLD		# set color
+	call	DRAW_RECT
+	# now a0 is same, a1 is below 7x7 rect and a2 is to right of 7x7 rect
+	# draw shiny sprite
+	addi	a0, a0, 1		# set initial x
+	addi	a1, a1, -6		# set initial y
+	addi	a2, s3, SPEC_SHINY_OFF	# get sprite address
+	call	DRAW_SPRITE
+DEX_PAGE:
+	beqz	s1, DEX_PAGE		# check for interrupt
+	
+	# on interrupt
+	addi	s1, x0, 0		# clear interrupt flag
+	lw	t0, 0x100(s0)		# read keyboard input
+	addi	t1, x0, S_CODE
+	beq	t0, t1, DEX_MOVE_DOWN	# if 's' pressed, move list down
+	addi	t1, x0, W_CODE
+	beq	t0, t1, DEX_MOVE_UP	# if 'w' pressed, move list up
+	addi	t1, x0, SPACE_CODE
+	beq	t0, t1, MENU_START	# if key pressed was space, go back to menu
+	j	DEX_PAGE
+DEX_MOVE_DOWN:
+	# first, see if selection index can be moved down
+	addi	t6, t6, -DEX_NUM_RECTS	# reset first number
+	addi	s2, s2, -1		# go to lower box
+	bgtz	s2, DEX_MOVE_DOWN_Y	# make sure not too low
+	# if not, move down numbers in boxes
+	addi	s2, s2, 1		# reset if too low
+	addi	t6, t6, 1		# inc first number
+	# last number may not be more than 255 (0x00 to 0xFE)
+	addi	t0, x0, 0x100		# get max to check
+	addi	t0, t0, -DEX_NUM_RECTS	# must be less than 255-DEX_NUM_RECTS
+	ble	t6, t0, DEX_MOVE_DOWN_Y	# check if first number too high
+	addi	t6, t6, -1		# if too high, go back down
+	j	DEX_UPDATE		# go back to update before changing address
+DEX_MOVE_DOWN_Y:
+	addi	s3, s3, MON_SPEC_SIZE	# move pointer to next species
+	j	DEX_UPDATE
+DEX_MOVE_UP:
+	# first, see if selection index can be moved up
+	addi	t6, t6, -DEX_NUM_RECTS	# reset first number
+	addi	s2, s2, 1		# go to upper box
+	addi	t0, s2, -DEX_NUM_RECTS	# number to check
+	blez	t0, DEX_MOVE_UP_Y	# make sure not too high
+	# if not, move up numbers in boxes
+	addi	s2, s2, -1		# reset if too high
+	addi	t6, t6, -1		# dec first number
+	# first number may not be <1
+	bgtz	t6, DEX_MOVE_UP_Y
+	addi	t6, t6, 1		# if already at 1, can't go lower
+	j	DEX_UPDATE		# go back to update before changing address
+DEX_MOVE_UP_Y:
+	addi	s3, s3, -MON_SPEC_SIZE	# move pointer to next species
+	j	DEX_UPDATE
+	
+	
 # interrupt service routine
 ISR:
 	addi	s1, x0, 1		# set interrupt flag high
@@ -1324,7 +1522,7 @@ DRAW_TILE:
 	
 # draw (rectangular) sprite with topleft at (a0, a1) with address in a2
 # in memory, sprite is first byte: 4 LSB x dimension, 4 MSB y dimension, followed by bytes for colors
-# modifies t0, t1, t2, t3, a0, a1, a2, a3, a4
+# modifies t0, t1, t2, t3, a1, a2, a3, a4
 # on ret, a0 is unmodified, a1 and a4 are y pixel below bottom of sprite, a2 is x pixel after right end of sprite
 DRAW_SPRITE:
 	addi	sp, sp, -4
@@ -2451,6 +2649,7 @@ DS_LOOP:
         # check if need to go to new line
         addi	t0, a0, L_SIZE
         addi	t0, t0, -WIDTH
+        addi	t0, t0, -1
         bltz	t0, DS_LOOP		# if end of next char is offscreen, go to next line
         addi	a0, x0, L_SIZE		# reset x
         addi	a1, a1, L_SIZE		# go to next line y
@@ -2798,6 +2997,15 @@ LD_TITLE_LOOP_2:
 	sb	t1, 4(t0)
 	sb	x0, 5(t0)		# last character in array is intentionally left 0 as terminator
 	
+	la 	t0, DEX_STR
+	addi	t1, x0, 'D'
+	sb	t1, 0(t0)
+	addi	t1, x0, 'E'
+	sb	t1, 1(t0)
+	addi	t1, x0, 'X'
+	sb	t1, 2(t0)
+	sb	x0, 3(t0)		# last character in array is intentionally left 0 as terminator
+	
 	# load nums string
 	la	t0, NUM_STR
 	sb	x0, 5(t0)		# other digits will be changed, so just need to fill terminator
@@ -2890,8 +3098,33 @@ LD_PARTY_LOOP:
 	sb	x0, 0(t0)
 	addi	t1, x0, 1
 	sb	t1, MON_DATA_OFF(t0)
-	addi	t1, x0, 5
+	addi	t1, x0, 1
 	sb	t1, MON_LEVEL_OFF(t0)
+	addi	t1, x0, 100
+	sb	t1, MON_HP_OFF(t0)
+	sb	t1, MON_STATS_OFF(t0)
+	
+	addi	t0, t0, MON_SIZE
+	sb	x0, 0(t0)
+	addi	t1, x0, 4
+	sb	t1, MON_DATA_OFF(t0)
+	addi	t1, x0, 5	
+	sb	t1, MON_LEVEL_OFF(t0)
+	addi	t1, x0, 49
+	sb	t1, MON_HP_OFF(t0)
+	addi	t1, x0, 100
+	sb	t1, MON_STATS_OFF(t0)
+	
+	addi	t0, t0, MON_SIZE
+	sb	x0, 0(t0)
+	addi	t1, x0, 4
+	sb	t1, MON_DATA_OFF(t0)
+	addi	t1, x0, 10
+	sb	t1, MON_LEVEL_OFF(t0)
+	addi	t1, x0, 24
+	sb	t1, MON_HP_OFF(t0)
+	addi	t1, x0, 100
+	sb	t1, MON_STATS_OFF(t0)
 	
 	addi	t0, t0, MON_SIZE
 	sb	x0, 0(t0)
@@ -2899,6 +3132,21 @@ LD_PARTY_LOOP:
 	sb	t1, MON_DATA_OFF(t0)
 	addi	t1, x0, 100	
 	sb	t1, MON_LEVEL_OFF(t0)
+	addi	t1, x0, 11
+	sb	t1, MON_HP_OFF(t0)
+	addi	t1, x0, 100
+	sb	t1, MON_STATS_OFF(t0)
+	
+	addi	t0, t0, MON_SIZE
+	sb	x0, 0(t0)
+	addi	t1, x0, 4
+	sb	t1, MON_DATA_OFF(t0)
+	addi	t1, x0, 100	
+	sb	t1, MON_LEVEL_OFF(t0)
+	addi	t1, x0, 0
+	sb	t1, MON_HP_OFF(t0)
+	addi	t1, x0, 100
+	sb	t1, MON_STATS_OFF(t0)
 	
 	la	t0, BOXES_ARR
 	sb	x0, 0(t0)
@@ -2914,7 +3162,7 @@ LD_PARTY_LOOP:
 	addi	t1, x0, 100	
 	sb	t1, MON_LEVEL_OFF(t0)
 	
-	# load species index
+# load species index
 	la	t0, MON_DEX_ARR		# get address of dex array - start of first species name
 	addi	t1, x0, 'P'
 	sb	t1, 0(t0)
@@ -2931,6 +3179,9 @@ LD_PARTY_LOOP:
 	addi	t1, x0, 'U'
 	sb	t1, 6(t0)
 	sb	x0, 7(t0)		# terminator 0 byte
+	addi	t2, t0, SPEC_EVO_OFF	# address of species evolution index
+	addi	t1, x0, 0xFF		# for now, does not evolve
+	sb	t1, 0(t2)
 	addi	t2, t0, SPEC_EV_OFF	# address of species EV yield
 	addi	t1, x0, 8		# EV yield of 2 spe
 	sb	t1, 1(t2)		# equivalent to 0x800 but only need to store the MSB byte
@@ -3021,6 +3272,15 @@ PIK_SHINY_LOOP:
 	sb	t1, 24(t2)
 	addi	t1, x0, MAUVE
 	sb	t1, 22(t2)
+	
+	addi	t0, t0, MON_SPEC_SIZE
+	li	t1, 0x4242
+	sh	t1, 0(t0)
+	sh	t1, 2(t0)
+	sh	t1, 4(t0)
+	sh	t1, 6(t0)
+	sh	t1, 8(t0)
+	sb	x0, 10(t0)
 	###################################
 	
 	# load world tiles
