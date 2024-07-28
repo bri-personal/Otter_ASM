@@ -155,7 +155,9 @@ ALL_TILES:	.space NUM_TILES
 # 0: currently selected index
 # 1: prev selected index
 # 2-9: colors of buttons
-MENU_ARR:	.space 10
+MENU_ARR:
+	.space 2
+	.byte RED MAGENTA ORANGE CYAN GREEN BLUE YELLOW PURPLE
 
 # monster species array for index
 # max of 255 species (index 0 to 0xFE. 0xFF is reserved for 'empty' in party array)
@@ -203,8 +205,9 @@ BOXES_STR:				# title text displayed for boxes on party screen
 	.byte	'B' 'O' 'X' 'E' 'S' 0
 DEX_STR:				# title text displayed for dex screen
 	.byte	'D' 'E' 'X' 0
-NUM_STR:	.space 6		# space to store string produced by NUM_TO_STR (6 bits for 5 digits and 0 terminator)
-
+NUM_STR:				# space to store string produced by NUM_TO_STR (6 bits for 5 digits and 0 terminator)
+	.space 5
+	.byte 0
 
 # executed code
 .text
@@ -2923,39 +2926,6 @@ DIV_END:
 LOAD_DATA:
 	addi	sp, sp, -4
 	sw	ra, 0(sp)
-	
-	# load nums string
-	la	t0, NUM_STR
-	sb	x0, 5(t0)		# other digits will be changed, so just need to fill terminator
-	
-	# load menu button colors
-	la	t0, MENU_ARR
-	addi	t0, t0, 2		# get address of first color, after bytes reserved for button index
-	
-	# store color bytes in array
-	addi	t1, x0, RED		# dex
-	sb	t1, 0(t0)
-	addi	t0, t0, 1
-	addi	t1, x0, MAGENTA		# party
-	sb	t1, 0(t0)
-	addi	t0, t0, 1
-	addi	t1, x0, ORANGE		# bag
-	sb	t1, 0(t0)
-	addi	t0, t0, 1
-	addi	t1, x0, CYAN		# save
-	sb	t1, 0(t0)
-	addi	t0, t0, 1
-	addi	t1, x0, GREEN		# map
-	sb	t1, 0(t0)
-	addi	t0, t0, 1
-	addi	t1, x0, BLUE		# player info
-	sb	t1, 0(t0)
-	addi	t0, t0, 1
-	addi	t1, x0, YELLOW		# battle
-	sb	t1, 0(t0)
-	addi	t0, t0, 1
-	addi	t1, x0, PURPLE		# settings
-	sb	t1, 0(t0)
 	
 	# fill player sprites
 	la	t0, PLAYER	
