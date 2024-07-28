@@ -13,11 +13,11 @@
 .eqv	P_HEIGHT	5
 .eqv	P_AREA		15		# must be P_WIDTH * P_HEIGHT
 .eqv	P_OR_OFF	2		# byte offset of orientation of player in memory
-.eqv	P_DOWN_OFF	3		# byte offset of player down sprite in memory
-.eqv	P_UP_OFF	19		# byte offset of player up sprite in memory
-.eqv	P_LEFT_OFF	35		# byte offset of player left sprite in memory
-.eqv	P_RIGHT_OFF	51		# byte offset of player right sprite in memory
-.eqv	P_BEHIND_OFF	67		# byte offset of "sprite" of pixels behind player in memory
+.eqv	P_DOWN_OFF	4		# byte offset of player down sprite in memory
+.eqv	P_UP_OFF	20		# byte offset of player up sprite in memory
+.eqv	P_LEFT_OFF	36		# byte offset of player left sprite in memory
+.eqv	P_RIGHT_OFF	52		# byte offset of player right sprite in memory
+.eqv	P_BEHIND_OFF	68		# byte offset of "sprite" of pixels behind player in memory
 
 # tile dimensions
 .eqv	T_SIZE		5		# width and height of square tiles
@@ -124,12 +124,15 @@
 # 0: x coord of top of rectangle
 # 1: y coord of top of rectange
 # 2: orientation (0=down, 1=up, 2=left, 3=right)
-# 3-18: player down/forward sprite (1 byte for dimensions, rest for colors). amount of bytes must equal P_AREA (P_WIDTH*P_HEIGHT) +1
-# 19-34: player up sprite (1 byte for dimensions, rest for colors). amount of bytes must equal P_AREA (P_WIDTH*P_HEIGHT) +1
-# 35-50: player left sprite (1 byte for dimensions, rest for colors). amount of bytes must equal P_AREA (P_WIDTH*P_HEIGHT) +1
-# 51-66: player right sprite (1 byte for dimensions, rest for colors). amount of bytes must equal P_AREA (P_WIDTH*P_HEIGHT) +1
-# 67-82: "sprite" of pixels behind player that can be redrawn after. amount of bytes must equal P_AREA (P_WIDTH*P_HEIGHT) +1
-PLAYER:		.space	83
+# 3: unused
+# 4-19: player down/forward sprite (1 byte for dimensions, rest for colors). amount of bytes must equal P_AREA (P_WIDTH*P_HEIGHT) +1
+# 20-35: player up sprite (1 byte for dimensions, rest for colors). amount of bytes must equal P_AREA (P_WIDTH*P_HEIGHT) +1
+# 36-51: player left sprite (1 byte for dimensions, rest for colors). amount of bytes must equal P_AREA (P_WIDTH*P_HEIGHT) +1
+# 52-67: player right sprite (1 byte for dimensions, rest for colors). amount of bytes must equal P_AREA (P_WIDTH*P_HEIGHT) +1
+# 68-83: "sprite" of pixels behind player that can be redrawn after. amount of bytes must equal P_AREA (P_WIDTH*P_HEIGHT) +1
+PLAYER:
+	.word	0 0x89898953 0xFA00FA00 0x0303FAA9 0x03030303 0x89898953 0xFA898989 0x0303FAFA 0x03030303 0x89898953 0xFA89FA00 0x0303FAFA 0x03030303
+		0x89898953 0xFA00FA89 0x0303FAFA 0x03030303 0x53 0 0 0
 
 # player offset data
 # 0: pixel offset x - horiz pixel dist from prev tile
@@ -2926,51 +2929,6 @@ DIV_END:
 LOAD_DATA:
 	addi	sp, sp, -4
 	sw	ra, 0(sp)
-	
-	# fill player sprites
-	la	t0, PLAYER	
-	addi	t2, t0, P_DOWN_OFF
-	li	t1, 0x89898953		# 0x53 is dimensions, rest are colors
-	sw	t1, 0(t2)
-	li	t1, 0xFA00FA00
-	sw	t1, 4(t2)
-	li	t1, 0x0303FAA9
-	sw	t1, 8(t2)
-	li	t1, 0x03030303
-	sw	t1, 12(t2)
-	
-	addi	t2, t0, P_UP_OFF
-	li	t1, 0x89898953		# 0x53 is dimensions, rest are colors
-	sw	t1, 0(t2)
-	li	t1, 0xFA898989
-	sw	t1, 4(t2)
-	li	t1, 0x0303FAFA
-	sw	t1, 8(t2)
-	li	t1, 0x03030303
-	sw	t1, 12(t2)
-	
-	addi	t2, t0, P_LEFT_OFF
-	li	t1, 0x89898953		# 0x53 is dimensions, rest are colors
-	sw	t1, 0(t2)
-	li	t1, 0xFA89FA00
-	sw	t1, 4(t2)
-	li	t1, 0x0303FAFA
-	sw	t1, 8(t2)
-	li	t1, 0x03030303
-	sw	t1, 12(t2)
-	
-	addi	t2, t0, P_RIGHT_OFF
-	li	t1, 0x89898953		# 0x53 is dimensions, rest are colors
-	sw	t1, 0(t2)
-	li	t1, 0xFA00FA89
-	sw	t1, 4(t2)
-	li	t1, 0x0303FAFA
-	sw	t1, 8(t2)
-	li	t1, 0x03030303
-	sw	t1, 12(t2)
-	
-	addi	t1, x0, 0x53
-	sb	t1, P_BEHIND_OFF(t0)
 	
 	# fill PARTY_ARR and BOXES_ARR with 255
 	la	t0, PARTY_ARR
