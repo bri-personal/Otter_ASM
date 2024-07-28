@@ -13,11 +13,11 @@
 .eqv	P_HEIGHT	5
 .eqv	P_AREA		15		# must be P_WIDTH * P_HEIGHT
 .eqv	P_OR_OFF	2		# byte offset of orientation of player in memory
-.eqv	P_DOWN_OFF	3		# byte offset of player down sprite in memory
-.eqv	P_UP_OFF	19		# byte offset of player up sprite in memory
-.eqv	P_LEFT_OFF	35		# byte offset of player left sprite in memory
-.eqv	P_RIGHT_OFF	51		# byte offset of player right sprite in memory
-.eqv	P_BEHIND_OFF	67		# byte offset of "sprite" of pixels behind player in memory
+.eqv	P_DOWN_OFF	4		# byte offset of player down sprite in memory
+.eqv	P_UP_OFF	20		# byte offset of player up sprite in memory
+.eqv	P_LEFT_OFF	36		# byte offset of player left sprite in memory
+.eqv	P_RIGHT_OFF	52		# byte offset of player right sprite in memory
+.eqv	P_BEHIND_OFF	68		# byte offset of "sprite" of pixels behind player in memory
 
 # tile dimensions
 .eqv	T_SIZE		5		# width and height of square tiles
@@ -124,12 +124,15 @@
 # 0: x coord of top of rectangle
 # 1: y coord of top of rectange
 # 2: orientation (0=down, 1=up, 2=left, 3=right)
-# 3-18: player down/forward sprite (1 byte for dimensions, rest for colors). amount of bytes must equal P_AREA (P_WIDTH*P_HEIGHT) +1
-# 19-34: player up sprite (1 byte for dimensions, rest for colors). amount of bytes must equal P_AREA (P_WIDTH*P_HEIGHT) +1
-# 35-50: player left sprite (1 byte for dimensions, rest for colors). amount of bytes must equal P_AREA (P_WIDTH*P_HEIGHT) +1
-# 51-66: player right sprite (1 byte for dimensions, rest for colors). amount of bytes must equal P_AREA (P_WIDTH*P_HEIGHT) +1
-# 67-82: "sprite" of pixels behind player that can be redrawn after. amount of bytes must equal P_AREA (P_WIDTH*P_HEIGHT) +1
-PLAYER:		.space	83
+# 3: unused
+# 4-19: player down/forward sprite (1 byte for dimensions, rest for colors). amount of bytes must equal P_AREA (P_WIDTH*P_HEIGHT) +1
+# 20-35: player up sprite (1 byte for dimensions, rest for colors). amount of bytes must equal P_AREA (P_WIDTH*P_HEIGHT) +1
+# 36-51: player left sprite (1 byte for dimensions, rest for colors). amount of bytes must equal P_AREA (P_WIDTH*P_HEIGHT) +1
+# 52-67: player right sprite (1 byte for dimensions, rest for colors). amount of bytes must equal P_AREA (P_WIDTH*P_HEIGHT) +1
+# 68-83: "sprite" of pixels behind player that can be redrawn after. amount of bytes must equal P_AREA (P_WIDTH*P_HEIGHT) +1
+PLAYER:
+	.word	0 0x89898953 0xFA00FA00 0x0303FAA9 0x03030303 0x89898953 0xFA898989 0x0303FAFA 0x03030303 0x89898953 0xFA89FA00 0x0303FAFA 0x03030303
+		0x89898953 0xFA00FA89 0x0303FAFA 0x03030303 0x53 0 0 0
 
 # player offset data
 # 0: pixel offset x - horiz pixel dist from prev tile
@@ -141,21 +144,39 @@ PLAYER:		.space	83
 OFFSET:		.space 4
 
 # world tiles data:
-# tiles array is array of addresses to fist tile in each row in ALL_TILES
+# tiles array is array of addresses to first tile in each row in ALL_TILES
 # size is 4 * TILES_PER_COL
-TILES_ARR:	.space 80
+TILES_ARR:	.space 96
 # all tiles includes type codes for all tiles in world
 # number of bytes = number of tiles, number corresponds to which tile is drawn
 # 0 - empty
 # 1 - wall
 # 2 - red (also empty)
-ALL_TILES:	.space NUM_TILES
+ALL_TILES:
+	.word	0x01010101 0x01010101 0x01010101 0x01010101 0x01010101 0x01010101 0x01010101 0x01010101 0x01010101 0x01010101 0x01010101 0x01010101
+		0x00000101 0x00000000 0x01010000 0x00000000 0x00000000 0x01010000 0x00000101 0x00000000 0x01010000 0x00000000 0x00000000 0x01010000
+		0x00000101 0x01010101 0x01010000 0x01010000 0x01010101 0x01010101 0x00000101 0x01010101 0x01010000 0x01010000 0x01010101 0x01010101
+		0x00000101 0x01010000 0x01010000 0x01010000 0x00000000 0x01010000 0x00000101 0x01010000 0x01010000 0x01010000 0x00000000 0x01010000
+		0x01010101 0x01010000 0x01010000 0x01010000 0x01010000 0x01010000 0x01010101 0x01010000 0x01010000 0x01010000 0x01010000 0x01010000
+		0x00000202 0x01010000 0x01010000 0x00000000 0x01010000 0x01010000 0x00000202 0x01010000 0x01010000 0x00000000 0x01010000 0x01010000
+		0x01010101 0x01010101 0x01010000 0x01010101 0x01010000 0x01010000 0x01010101 0x01010101 0x01010000 0x01010101 0x01010000 0x01010000
+		0x00000101 0x00000000 0x01010000 0x00000000 0x01010000 0x01010000 0x00000101 0x00000000 0x01010000 0x00000000 0x01010000 0x01010000
+		0x00000101 0x01010101 0x01010101 0x01010000 0x01010101 0x01010000 0x00000101 0x01010101 0x01010101 0x01010000 0x01010101 0x01010000
+		0x00000101 0x01010101 0x01010101 0x01010000 0x00000000 0x01010000 0x00000101 0x01010101 0x01010101 0x01010000 0x00000000 0x01010000
+		0x00000101 0x00000000 0x00000000 0x01010000 0x01010000 0x01010000 0x00000101 0x00000000 0x00000000 0x01010000 0x01010000 0x01010000
+		0x01010101 0x01010101 0x01010101 0x01010101 0x01010202 0x01010101 0x01010101 0x01010101 0x01010101 0x01010101 0x01010202 0x01010101
 
 # menu selection index (2 bytes) and button colors (number of bytes for number of buttons)
 # 0: currently selected index
 # 1: prev selected index
 # 2-9: colors of buttons
-MENU_ARR:	.space 10
+MENU_ARR:
+	.space 2
+	.byte RED MAGENTA ORANGE CYAN GREEN BLUE YELLOW PURPLE
+	
+# types:
+# 0  - no type (second type of monotypes)
+# 12 - electric
 
 # monster species array for index
 # max of 255 species (index 0 to 0xFE. 0xFF is reserved for 'empty' in party array)
@@ -171,7 +192,24 @@ MENU_ARR:	.space 10
 # 26-27: ability indices
 # 28-53: sprite dimensions and colors (5x5)
 # 54-79: shiny sprite dimensions and colors (5x5)
-MON_DEX_ARR:	.space	MON_DEX_SIZE
+MON_DEX_ARR:
+	# 1 Pikachu
+	.byte	'P' 'I' 'K' 'A' 'C' 'H' 'U' 0 0 0 0	# name
+	.byte	0xFF	# evolves into (nothing)
+	.space	1	# unused
+	.byte	0 8	# EV yield (2 SPE)
+	.byte	35 55 40 50 50 90	# base stats
+	.byte	12 0	# types (electric, none)
+	.byte	190	# catch rate
+	.byte	0 0	# egg groups (ADD LATER)
+	.byte	0 0	# abilities (ADD LATER)
+	# sprite (normal)
+	.byte	0x55 BLACK YELLOW YELLOW YELLOW BLACK YELLOW WHITE YELLOW WHITE YELLOW WHITE BLACK YELLOW BLACK WHITE RED YELLOW YELLOW YELLOW RED RED YELLOW MAUVE YELLOW RED
+	# sprite (shiny)
+	.byte	0x55 BLACK ORANGE ORANGE ORANGE BLACK ORANGE WHITE ORANGE WHITE ORANGE WHITE BLACK ORANGE BLACK WHITE RED ORANGE ORANGE ORANGE RED RED ORANGE MAUVE ORANGE RED
+	# 2 BBBBBBBBBB
+	.byte 'B' 'B' 'B' 'B' 'B' 'B' 'B' 'B' 'B' 'B' 0
+	.space	69
 
 # monster arrays for player party and boxes. sizes specified above
 # monster data structure is 48 bytes broken down as follows:
@@ -192,13 +230,20 @@ BOXES_ARR:	.space	BOXES_ARR_SIZE
 
 # strings - each byte is a character
 # last byte must be 0 as terminator character
-TITLE_STR:	.space 43		# title text displayed on title screen
-MENU_STR:	.space 5		# title text displayed on menu screen
-PARTY_STR:	.space 6		# title text displayed on party screen
-BOXES_STR:	.space 6		# title text displayed for boxes on party screen
-DEX_STR:	.space 4		# title text displayed for dex screen
-NUM_STR:	.space 6		# space to store string produced by NUM_TO_STR (6 bits for 5 digits and 0 terminator)
-
+TITLE_STR:				# title text displayed on title screen
+	.byte	'A' 'B' 'C' 'D' 'E' 'F' 'G' 'H' 'I' 'J' 'K' 'L' 'M' 'N' 'O' 'P' 'Q' 'R' 'S' 'T' 'U' 'V' 'W' 'X' 'Y' 'Z'
+		' ' '1' '2' '3' '4' '5' '6' '7' '8' '9' '0' '.' ',' '!' '?' 'a' 0
+MENU_STR:				# title text displayed on menu screen
+	.byte	'M' 'E' 'N' 'U' 0
+PARTY_STR:				# title text displayed on party screen
+	.byte	'P' 'A' 'R' 'T' 'Y' 0
+BOXES_STR:				# title text displayed for boxes on party screen
+	.byte	'B' 'O' 'X' 'E' 'S' 0
+DEX_STR:				# title text displayed for dex screen
+	.byte	'D' 'E' 'X' 0
+NUM_STR:				# space to store string produced by NUM_TO_STR (6 bits for 5 digits and 0 terminator)
+	.space 5
+	.byte 0
 
 # executed code
 .text
@@ -236,7 +281,7 @@ TILES_ARR_LOOP:
         sw	t0, 0(t1)		# store address of row in all tiles to entry in tiles array
         addi	t0, t0, T_PER_ROW	# get first address of next row
         addi	t1, t1, 4		# get next word index of tiles array
-        blt	t1, t2, TILES_ARR_LOOP	# if new address in all tiles is still within bounds, store addr of next row
+        blt	t0, t2, TILES_ARR_LOOP	# if new address in all tiles is still within bounds, store addr of next row
         
         # load tile codes into ALL_TILES array
         call	LOAD_DATA
@@ -2909,180 +2954,11 @@ DIV_END:
 
 	
 # loads all data into data segment that needs to be preset
-# # load title string
-# # loads button colors into menu array
-# # loads tile codes into ALL_TILES array for world
-# # should be called in initialization of world page (WORLD_START)
+# fill entire party and dex arrays with 255 (empty)
 # # modifies t0, t1, t2
 LOAD_DATA:
 	addi	sp, sp, -4
 	sw	ra, 0(sp)
-	
-	# load title string
-	la	t0, TITLE_STR
-	
-	# show all letters
-	addi	t1, x0, 'A'
-	addi	t2, t0, 26
-LD_TITLE_LOOP:
-	sb	t1, 0(t0)
-	addi	t0, t0, 1
-	addi	t1, t1, 1
-	blt	t0, t2, LD_TITLE_LOOP
-	
-	addi	t1, x0, ' '
-	sb	t1, 0(t0)
-	addi	t0, t0, 1
-	
-	# show all numbers
-	addi	t2, t0, 10
-	addi	t1, x0, '0'
-LD_TITLE_LOOP_2:
-	sb	t1, 0(t0)
-	addi	t0, t0, 1
-	addi	t1, t1, 1
-	blt	t0, t2, LD_TITLE_LOOP_2
-	
-	# show punctuation and unknown
-	addi	t1, x0, '.'
-	sb	t1, 0(t0)
-	addi	t1, x0, ','
-	sb	t1, 1(t0)
-	addi	t1, x0, '!'
-	sb	t1, 2(t0)
-	addi	t1, x0, '?'
-	sb	t1, 3(t0)
-	addi	t1, x0, 'a'		# for unknown char
-	sb	t1, 4(t0)
-
-	sb	x0, 5(t0)		# last character in array is intentionally left 0 as terminator
-	
-	# load menu string
-	la	t0, MENU_STR
-	addi	t1, x0, 'M'
-	sb	t1, 0(t0)
-	addi	t1, x0, 'E'
-	sb	t1, 1(t0)
-	addi	t1, x0, 'N'
-	sb	t1, 2(t0)
-	addi	t1, x0, 'U'
-	sb	t1, 3(t0)
-	sb	x0, 4(t0)		# last character in array is intentionally left 0 as terminator
-	
-	# load party string
-	la	t0, PARTY_STR
-	addi	t1, x0, 'P'
-	sb	t1, 0(t0)
-	addi	t1, x0, 'A'
-	sb	t1, 1(t0)
-	addi	t1, x0, 'R'
-	sb	t1, 2(t0)
-	addi	t1, x0, 'T'
-	sb	t1, 3(t0)
-	addi	t1, x0, 'Y'
-	sb	t1, 4(t0)
-	sb	x0, 5(t0)		# last character in array is intentionally left 0 as terminator
-	
-	# load boxes string
-	la	t0, BOXES_STR
-	addi	t1, x0, 'B'
-	sb	t1, 0(t0)
-	addi	t1, x0, 'O'
-	sb	t1, 1(t0)
-	addi	t1, x0, 'X'
-	sb	t1, 2(t0)
-	addi	t1, x0, 'E'
-	sb	t1, 3(t0)
-	addi	t1, x0, 'S'
-	sb	t1, 4(t0)
-	sb	x0, 5(t0)		# last character in array is intentionally left 0 as terminator
-	
-	la 	t0, DEX_STR
-	addi	t1, x0, 'D'
-	sb	t1, 0(t0)
-	addi	t1, x0, 'E'
-	sb	t1, 1(t0)
-	addi	t1, x0, 'X'
-	sb	t1, 2(t0)
-	sb	x0, 3(t0)		# last character in array is intentionally left 0 as terminator
-	
-	# load nums string
-	la	t0, NUM_STR
-	sb	x0, 5(t0)		# other digits will be changed, so just need to fill terminator
-	
-	# load menu button colors
-	la	t0, MENU_ARR
-	addi	t0, t0, 2		# get address of first color, after bytes reserved for button index
-	
-	# store color bytes in array
-	addi	t1, x0, RED		# dex
-	sb	t1, 0(t0)
-	addi	t0, t0, 1
-	addi	t1, x0, MAGENTA		# party
-	sb	t1, 0(t0)
-	addi	t0, t0, 1
-	addi	t1, x0, ORANGE		# bag
-	sb	t1, 0(t0)
-	addi	t0, t0, 1
-	addi	t1, x0, CYAN		# save
-	sb	t1, 0(t0)
-	addi	t0, t0, 1
-	addi	t1, x0, GREEN		# map
-	sb	t1, 0(t0)
-	addi	t0, t0, 1
-	addi	t1, x0, BLUE		# player info
-	sb	t1, 0(t0)
-	addi	t0, t0, 1
-	addi	t1, x0, YELLOW		# battle
-	sb	t1, 0(t0)
-	addi	t0, t0, 1
-	addi	t1, x0, PURPLE		# settings
-	sb	t1, 0(t0)
-	
-	# fill player sprites
-	la	t0, PLAYER	
-	addi	t2, t0, P_DOWN_OFF
-	li	t1, 0x89898953		# 0x53 is dimensions, rest are colors
-	sw	t1, 0(t2)
-	li	t1, 0xFA00FA00
-	sw	t1, 4(t2)
-	li	t1, 0x0303FAA9
-	sw	t1, 8(t2)
-	li	t1, 0x03030303
-	sw	t1, 12(t2)
-	
-	addi	t2, t0, P_UP_OFF
-	li	t1, 0x89898953		# 0x53 is dimensions, rest are colors
-	sw	t1, 0(t2)
-	li	t1, 0xFA898989
-	sw	t1, 4(t2)
-	li	t1, 0x0303FAFA
-	sw	t1, 8(t2)
-	li	t1, 0x03030303
-	sw	t1, 12(t2)
-	
-	addi	t2, t0, P_LEFT_OFF
-	li	t1, 0x89898953		# 0x53 is dimensions, rest are colors
-	sw	t1, 0(t2)
-	li	t1, 0xFA89FA00
-	sw	t1, 4(t2)
-	li	t1, 0x0303FAFA
-	sw	t1, 8(t2)
-	li	t1, 0x03030303
-	sw	t1, 12(t2)
-	
-	addi	t2, t0, P_RIGHT_OFF
-	li	t1, 0x89898953		# 0x53 is dimensions, rest are colors
-	sw	t1, 0(t2)
-	li	t1, 0xFA00FA89
-	sw	t1, 4(t2)
-	li	t1, 0x0303FAFA
-	sw	t1, 8(t2)
-	li	t1, 0x03030303
-	sw	t1, 12(t2)
-	
-	addi	t1, x0, 0x53
-	sb	t1, P_BEHIND_OFF(t0)
 	
 	# fill PARTY_ARR and BOXES_ARR with 255
 	la	t0, PARTY_ARR
@@ -3093,6 +2969,7 @@ LD_PARTY_LOOP:
 	sb	t1, 0(t0)		# store 255
 	addi	t0, t0, MON_SIZE	# inc to start of next mon
 	blt	t0, t2, LD_PARTY_LOOP
+	
 	# for testing, fill some indices of party/boxes with 0. REMOVE LATER
 	la 	t0, PARTY_ARR
 	sb	x0, 0(t0)
@@ -3162,588 +3039,8 @@ LD_PARTY_LOOP:
 	addi	t1, x0, 100	
 	sb	t1, MON_LEVEL_OFF(t0)
 	
-# load species index
-	la	t0, MON_DEX_ARR		# get address of dex array - start of first species name
-	addi	t1, x0, 'P'
-	sb	t1, 0(t0)
-	addi	t1, x0, 'I'
-	sb	t1, 1(t0)
-	addi	t1, x0, 'K'
-	sb	t1, 2(t0)
-	addi	t1, x0, 'A'
-	sb	t1, 3(t0)
-	addi	t1, x0, 'C'
-	sb	t1, 4(t0)
-	addi	t1, x0, 'H'
-	sb	t1, 5(t0)
-	addi	t1, x0, 'U'
-	sb	t1, 6(t0)
-	sb	x0, 7(t0)		# terminator 0 byte
-	addi	t2, t0, SPEC_EVO_OFF	# address of species evolution index
-	addi	t1, x0, 0xFF		# for now, does not evolve
-	sb	t1, 0(t2)
-	addi	t2, t0, SPEC_EV_OFF	# address of species EV yield
-	addi	t1, x0, 8		# EV yield of 2 spe
-	sb	t1, 1(t2)		# equivalent to 0x800 but only need to store the MSB byte
-	addi	t2, t0, SPEC_BASE_OFF	# address of species base stats
-	addi	t1, x0, 35
-	sb	t1, 0(t2)		# hp
-	addi	t1, x0, 55
-	sb	t1, 1(t2)		# atk
-	addi	t1, x0, 40
-	sb	t1, 2(t2)		# def
-	addi	t1, x0, 50
-	sb	t1, 3(t2)		# spa
-	sb	t1, 4(t2)		# spd
-	addi	t1, x0, 90
-	sb	t1, 5(t2)		# spe
-	addi	t2, t0, SPEC_TYPE_OFF	# address of species types
-	addi	t1, x0, 12		# electric type = 12
-	sb	t1, 0(t2)
-	sb	t1, 1(t2)		# equal for both because only one type
-	addi	t2, t0, SPEC_CATCH_OFF	# address of catch rate
-	addi	t1, x0, 190
-	sb	t1, 0(t2)
-	addi	t2, t0, SPEC_EGG_OFF	# address of egg groups
-	addi	t1, x0, 0x0 # CHANGE WHEN HAVE LIST
-	sh	t1, 0(t2)
-	addi	t2, t0, SPEC_AB_OFF	# address of abilities
-	addi	t1, x0, 0x0 # CHANGE WHEN HAVE LIST
-	sh	t1, 0(t2)
-	addi	t2, t0, SPEC_SPRITE_OFF	# address of sprite colors
-	# store dimensions and colors for sprite
-	addi	t1, x0, 0x55		# dimensions
-	sb	t1, 0(t2)		# store dimensions
-	addi	t2, t2, 1		# inc to addr for colors
-	addi	t1, x0, YELLOW
-	addi	t3, t2, 25		# t2=counter, this is max
-PIK_SPRITE_LOOP:
-	sb	t1, 0(t2)		# store color
-	addi	t2, t2, 1		# inc counter
-	blt	t2, t3, PIK_SPRITE_LOOP
-	
-	addi	t2, t0, SPEC_SPRITE_OFF
-	addi	t2, t2, 1
-	addi	t1, x0, BLACK
-	sb	t1, 0(t2)
-	sb	t1, 4(t2)
-	sb	t1, 11(t2)
-	sb	t1, 13(t2)
-	addi	t1, x0, WHITE
-	sb	t1, 6(t2)
-	sb	t1, 8(t2)
-	sb	t1, 10(t2)
-	sb	t1, 14(t2)
-	addi	t1, x0, RED
-	sb	t1, 15(t2)
-	sb	t1, 19(t2)
-	sb	t1, 20(t2)
-	sb	t1, 24(t2)
-	addi	t1, x0, MAUVE
-	sb	t1, 22(t2)
-	# store dimensions colors for shiny sprite
-	addi	t2, t0, SPEC_SHINY_OFF
-	addi	t1, x0, 0x55		# dimensions
-	sb	t1, 0(t2)		# store dimensions
-	addi	t2, t2, 1		# inc to addr for colors
-	addi	t1, x0, ORANGE
-	addi	t3, t2, 25		# set new max
-PIK_SHINY_LOOP:
-	sb	t1, 0(t2)		# store color
-	addi	t2, t2, 1		# inc counter
-	blt	t2, t3, PIK_SHINY_LOOP
-	
-	addi	t2, t0, SPEC_SHINY_OFF
-	addi	t2, t2, 1
-	addi	t1, x0, BLACK
-	sb	t1, 0(t2)
-	sb	t1, 4(t2)
-	sb	t1, 11(t2)
-	sb	t1, 13(t2)
-	addi	t1, x0, WHITE
-	sb	t1, 6(t2)
-	sb	t1, 8(t2)
-	sb	t1, 10(t2)
-	sb	t1, 14(t2)
-	addi	t1, x0, RED
-	sb	t1, 15(t2)
-	sb	t1, 19(t2)
-	sb	t1, 20(t2)
-	sb	t1, 24(t2)
-	addi	t1, x0, MAUVE
-	sb	t1, 22(t2)
-	
-	addi	t0, t0, MON_SPEC_SIZE
-	li	t1, 0x4242
-	sh	t1, 0(t0)
-	sh	t1, 2(t0)
-	sh	t1, 4(t0)
-	sh	t1, 6(t0)
-	sh	t1, 8(t0)
-	sb	x0, 10(t0)
 	###################################
 	
-	# load world tiles
-        la	t0, TILES_ARR		# get tiles array address. t2 is still end of all tiles
-        lw	t0, 0(t0)		# get first address of all tiles from tiles array
-        
-        #  rows of maze - REMOVE LATER
-LOAD_T_ROW:
-	# row 1
-        li	t1, 0x01010101
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x01010101
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x01010101
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x01010101
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x01010101
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x01010101
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x01010101
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x01010101
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x01010101
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x01010101
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x01010101
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x01010101
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        
-        # row 2
-        li	t1, 0x00000101
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x00000000
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x01010000
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x00000000
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x00000000
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x01010000
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x00000101
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x00000000
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x01010000
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x00000000
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x00000000
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x01010000
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        
-        # row 3
-        li	t1, 0x00000101
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x01010101
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x01010000
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x01010000
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x01010101
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x01010101
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x00000101
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x01010101
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x01010000
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x01010000
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x01010101
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x01010101
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        
-        # row 4
-        li	t1, 0x00000101
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x01010000
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x01010000
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x01010000
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x00000000
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x01010000
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x00000101
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x01010000
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x01010000
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x01010000
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x00000000
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x01010000
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        
-        # row 5
-        li	t1, 0x01010101
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x01010000
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x01010000
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x01010000
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x01010000
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x01010000
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x01010101
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x01010000
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x01010000
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x01010000
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x01010000
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x01010000
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        
-        # row 6
-        li	t1, 0x00000202
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x01010000
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x01010000
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x00000000
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x01010000
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x01010000
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x00000202
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x01010000
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x01010000
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x00000000
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x01010000
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x01010000
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        
-        # row 7
-        li	t1, 0x01010101
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x01010101
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x01010000
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x01010101
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x01010000
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x01010000
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x01010101
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x01010101
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x01010000
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x01010101
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x01010000
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x01010000
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        
-        # row 8
-        li	t1, 0x00000101
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x00000000
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x01010000
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x00000000
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x01010000
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x01010000
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x00000101
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x00000000
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x01010000
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x00000000
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x01010000
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x01010000
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        
-        # row 9
-        li	t1, 0x00000101
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x01010101
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x01010101
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x01010000
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x01010101
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x01010000
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x00000101
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x01010101
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x01010101
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x01010000
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x01010101
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x01010000
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        
-        # row 10
-        li	t1, 0x00000101
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x01010101
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x01010101
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x01010000
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x00000000
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x01010000
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x00000101
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x01010101
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x01010101
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x01010000
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x00000000
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x01010000
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        
-        # row 11
-        li	t1, 0x00000101
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x00000000
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x00000000
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x01010000
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x01010000
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x01010000
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x00000101
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x00000000
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x00000000
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x01010000
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x01010000
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x01010000
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        
-        # row 12
-        li	t1, 0x01010101
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x01010101
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x01010101
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x01010101
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x01010202
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x01010101
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x01010101
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x01010101
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x01010101
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x01010101
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x01010202
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
-        li	t1, 0x01010101
-        sw	t1, 0(t0)
-        addi	t0, t0, 4
         lw	ra, 0(sp)
 	addi	sp, sp, 4
 	ret
