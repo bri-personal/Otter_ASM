@@ -2954,10 +2954,7 @@ DIV_END:
 
 	
 # loads all data into data segment that needs to be preset
-# # load title string
-# # loads button colors into menu array
-# # loads tile codes into ALL_TILES array for world
-# # should be called in initialization of world page (WORLD_START)
+# fill entire party and dex arrays with 255 (empty)
 # # modifies t0, t1, t2
 LOAD_DATA:
 	addi	sp, sp, -4
@@ -2972,6 +2969,7 @@ LD_PARTY_LOOP:
 	sb	t1, 0(t0)		# store 255
 	addi	t0, t0, MON_SIZE	# inc to start of next mon
 	blt	t0, t2, LD_PARTY_LOOP
+	
 	# for testing, fill some indices of party/boxes with 0. REMOVE LATER
 	la 	t0, PARTY_ARR
 	sb	x0, 0(t0)
