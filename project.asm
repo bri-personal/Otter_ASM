@@ -173,6 +173,10 @@ ALL_TILES:
 MENU_ARR:
 	.space 2
 	.byte RED MAGENTA ORANGE CYAN GREEN BLUE YELLOW PURPLE
+	
+# types:
+# 0  - no type (second type of monotypes)
+# 12 - electric
 
 # monster species array for index
 # max of 255 species (index 0 to 0xFE. 0xFF is reserved for 'empty' in party array)
@@ -188,7 +192,24 @@ MENU_ARR:
 # 26-27: ability indices
 # 28-53: sprite dimensions and colors (5x5)
 # 54-79: shiny sprite dimensions and colors (5x5)
-MON_DEX_ARR:	.space	MON_DEX_SIZE
+MON_DEX_ARR:
+	# 1 Pikachu
+	.byte	'P' 'I' 'K' 'A' 'C' 'H' 'U' 0 0 0 0	# name
+	.byte	0xFF	# evolves into (nothing)
+	.space	1	# unused
+	.byte	0 8	# EV yield (2 SPE)
+	.byte	35 55 40 50 50 90	# base stats
+	.byte	12 0	# types (electric, none)
+	.byte	190	# catch rate
+	.byte	0 0	# egg groups (ADD LATER)
+	.byte	0 0	# abilities (ADD LATER)
+	# sprite (normal)
+	.byte	0x55 BLACK YELLOW YELLOW YELLOW BLACK YELLOW WHITE YELLOW WHITE YELLOW WHITE BLACK YELLOW BLACK WHITE RED YELLOW YELLOW YELLOW RED RED YELLOW MAUVE YELLOW RED
+	# sprite (shiny)
+	.byte	0x55 BLACK ORANGE ORANGE ORANGE BLACK ORANGE WHITE ORANGE WHITE ORANGE WHITE BLACK ORANGE BLACK WHITE RED ORANGE ORANGE ORANGE RED RED ORANGE MAUVE ORANGE RED
+	# 2 BBBBBBBBBB
+	.byte 'B' 'B' 'B' 'B' 'B' 'B' 'B' 'B' 'B' 'B' 0
+	.space	69
 
 # monster arrays for player party and boxes. sizes specified above
 # monster data structure is 48 bytes broken down as follows:
@@ -3020,125 +3041,6 @@ LD_PARTY_LOOP:
 	addi	t1, x0, 100	
 	sb	t1, MON_LEVEL_OFF(t0)
 	
-# load species index
-	la	t0, MON_DEX_ARR		# get address of dex array - start of first species name
-	addi	t1, x0, 'P'
-	sb	t1, 0(t0)
-	addi	t1, x0, 'I'
-	sb	t1, 1(t0)
-	addi	t1, x0, 'K'
-	sb	t1, 2(t0)
-	addi	t1, x0, 'A'
-	sb	t1, 3(t0)
-	addi	t1, x0, 'C'
-	sb	t1, 4(t0)
-	addi	t1, x0, 'H'
-	sb	t1, 5(t0)
-	addi	t1, x0, 'U'
-	sb	t1, 6(t0)
-	sb	x0, 7(t0)		# terminator 0 byte
-	addi	t2, t0, SPEC_EVO_OFF	# address of species evolution index
-	addi	t1, x0, 0xFF		# for now, does not evolve
-	sb	t1, 0(t2)
-	addi	t2, t0, SPEC_EV_OFF	# address of species EV yield
-	addi	t1, x0, 8		# EV yield of 2 spe
-	sb	t1, 1(t2)		# equivalent to 0x800 but only need to store the MSB byte
-	addi	t2, t0, SPEC_BASE_OFF	# address of species base stats
-	addi	t1, x0, 35
-	sb	t1, 0(t2)		# hp
-	addi	t1, x0, 55
-	sb	t1, 1(t2)		# atk
-	addi	t1, x0, 40
-	sb	t1, 2(t2)		# def
-	addi	t1, x0, 50
-	sb	t1, 3(t2)		# spa
-	sb	t1, 4(t2)		# spd
-	addi	t1, x0, 90
-	sb	t1, 5(t2)		# spe
-	addi	t2, t0, SPEC_TYPE_OFF	# address of species types
-	addi	t1, x0, 12		# electric type = 12
-	sb	t1, 0(t2)
-	sb	t1, 1(t2)		# equal for both because only one type
-	addi	t2, t0, SPEC_CATCH_OFF	# address of catch rate
-	addi	t1, x0, 190
-	sb	t1, 0(t2)
-	addi	t2, t0, SPEC_EGG_OFF	# address of egg groups
-	addi	t1, x0, 0x0 # CHANGE WHEN HAVE LIST
-	sh	t1, 0(t2)
-	addi	t2, t0, SPEC_AB_OFF	# address of abilities
-	addi	t1, x0, 0x0 # CHANGE WHEN HAVE LIST
-	sh	t1, 0(t2)
-	addi	t2, t0, SPEC_SPRITE_OFF	# address of sprite colors
-	# store dimensions and colors for sprite
-	addi	t1, x0, 0x55		# dimensions
-	sb	t1, 0(t2)		# store dimensions
-	addi	t2, t2, 1		# inc to addr for colors
-	addi	t1, x0, YELLOW
-	addi	t3, t2, 25		# t2=counter, this is max
-PIK_SPRITE_LOOP:
-	sb	t1, 0(t2)		# store color
-	addi	t2, t2, 1		# inc counter
-	blt	t2, t3, PIK_SPRITE_LOOP
-	
-	addi	t2, t0, SPEC_SPRITE_OFF
-	addi	t2, t2, 1
-	addi	t1, x0, BLACK
-	sb	t1, 0(t2)
-	sb	t1, 4(t2)
-	sb	t1, 11(t2)
-	sb	t1, 13(t2)
-	addi	t1, x0, WHITE
-	sb	t1, 6(t2)
-	sb	t1, 8(t2)
-	sb	t1, 10(t2)
-	sb	t1, 14(t2)
-	addi	t1, x0, RED
-	sb	t1, 15(t2)
-	sb	t1, 19(t2)
-	sb	t1, 20(t2)
-	sb	t1, 24(t2)
-	addi	t1, x0, MAUVE
-	sb	t1, 22(t2)
-	# store dimensions colors for shiny sprite
-	addi	t2, t0, SPEC_SHINY_OFF
-	addi	t1, x0, 0x55		# dimensions
-	sb	t1, 0(t2)		# store dimensions
-	addi	t2, t2, 1		# inc to addr for colors
-	addi	t1, x0, ORANGE
-	addi	t3, t2, 25		# set new max
-PIK_SHINY_LOOP:
-	sb	t1, 0(t2)		# store color
-	addi	t2, t2, 1		# inc counter
-	blt	t2, t3, PIK_SHINY_LOOP
-	
-	addi	t2, t0, SPEC_SHINY_OFF
-	addi	t2, t2, 1
-	addi	t1, x0, BLACK
-	sb	t1, 0(t2)
-	sb	t1, 4(t2)
-	sb	t1, 11(t2)
-	sb	t1, 13(t2)
-	addi	t1, x0, WHITE
-	sb	t1, 6(t2)
-	sb	t1, 8(t2)
-	sb	t1, 10(t2)
-	sb	t1, 14(t2)
-	addi	t1, x0, RED
-	sb	t1, 15(t2)
-	sb	t1, 19(t2)
-	sb	t1, 20(t2)
-	sb	t1, 24(t2)
-	addi	t1, x0, MAUVE
-	sb	t1, 22(t2)
-	
-	addi	t0, t0, MON_SPEC_SIZE
-	li	t1, 0x4242
-	sh	t1, 0(t0)
-	sh	t1, 2(t0)
-	sh	t1, 4(t0)
-	sh	t1, 6(t0)
-	sh	t1, 8(t0)
-	sb	x0, 10(t0)
 	###################################
 	
         lw	ra, 0(sp)
